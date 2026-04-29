@@ -23,7 +23,7 @@ TELEGRAM_NOTIFICATIONS_ENABLED: bool = bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT
 # ---------------------------------------------------------------------------
 # Symbols to watch
 # ---------------------------------------------------------------------------
-SYMBOLS: list[str] = ["BTC/USD", "ETH/USD", "SOL/USD"]
+SYMBOLS: list[str] = ["BTC/USD", "ETH/USD", "SOL/USD", "DOGE/USD"]
 
 # ---------------------------------------------------------------------------
 # Risk management (beginner plan: $100 account)
