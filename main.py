@@ -1,0 +1,308 @@
+"""
+AlpacaCryptoTrader — main entry point.
+
+VWAP Pullback Strategy for BTC, ETH, SOL
+Paper trading by default (set ALPACA_PAPER=false in .env to go live).
+
+Run:
+    python main.py
+"""
+from __future__ import annotations
+
+import signal
+import sys
+import time
+from datetime import datetime, timezone
+
+from loguru import logger
+
+import config
+from data.market_data import get_bars, get_latest_quote
+from trader.alpaca_client import get_trading_client
+from trader.discord_notifier import (
+    format_account_line,
+    has_been_notified,
+    mark_notified,
+    send_buy_submitted,
+    send_fill_update,
+)
+from trader.journal import (
+    ensure_journal,
+    get_open_trade_symbols,
+    get_today_stats,
+    log_trade,
+    update_trade,
+)
+from trader.order_manager import (
+    cancel_open_buy_orders,
+    get_account_info,
+    get_open_orders,
+    get_open_positions,
+    place_order,
+)
+from trader.risk_manager import check_daily_limits, validate_setup
+from trader.strategy import detect_signal
+
+# ---------------------------------------------------------------------------
+# Logging setup
+# ---------------------------------------------------------------------------
+logger.remove()
+logger.add(
+    sys.stdout,
+    colorize=True,
+    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level:<8}</level> | {message}",
+    level="INFO",
+)
+logger.add(
+    "logs/trader_{time:YYYY-MM-DD}.log",
+    rotation="1 day",
+    retention="30 days",
+    level="DEBUG",
+    encoding="utf-8",
+)
+
+# ---------------------------------------------------------------------------
+# Graceful shutdown
+# ---------------------------------------------------------------------------
+_running = True
+
+
+def _shutdown(signum, frame):
+    global _running
+    logger.warning("Shutdown signal received — stopping after current cycle.")
+    _running = False
+
+
+signal.signal(signal.SIGINT,  _shutdown)
+signal.signal(signal.SIGTERM, _shutdown)
+
+
+def _build_account_line() -> str:
+    stats = get_today_stats()
+    account = get_account_info()
+    return format_account_line(account, stats["trades_today"], stats["daily_pnl"])
+
+
+# ---------------------------------------------------------------------------
+# Position monitoring
+# ---------------------------------------------------------------------------
+
+def sync_open_positions_to_journal() -> None:
+    """
+    Cross-reference Alpaca's live positions / closed orders against the
+    journal and update any rows whose status has changed.
+
+    Strategy:
+      - Fetch all orders that are NOT open (i.e., filled, cancelled, expired).
+      - For each journal order_id, if Alpaca reports it filled/cancelled, update.
+    """
+    try:
+        from alpaca.trading.requests import GetOrdersRequest
+        from alpaca.trading.enums import QueryOrderStatus
+
+        client = get_trading_client()
+        closed_orders = client.get_orders(
+            GetOrdersRequest(status=QueryOrderStatus.CLOSED, limit=50)
+        )
+
+        for order in closed_orders:
+            order_id = str(order.id)
+            status   = str(order.status).lower()
+
+            filled_price: float | None = None
+            pnl: float | None = None
+
+            if status == "filled" and order.filled_avg_price:
+                filled_price = float(order.filled_avg_price)
+                # P&L is tracked by Alpaca for the position; we log the fill price here.
+                # Accurate P&L will be in the position's unrealized/realized fields.
+
+            update_trade(order_id, status, filled_price, pnl)
+
+            # Notify once per filled order (covers both BUY and SELL fills).
+            if status == "filled" and not has_been_notified(order_id):
+                account_line = _build_account_line()
+                if send_fill_update(order, account_line):
+                    mark_notified(order_id)
+
+    except Exception as exc:
+        logger.error(f"Position sync error: {exc}")
+
+
+def log_position_summary() -> None:
+    """Print a one-line summary of each open position."""
+    positions = get_open_positions()
+    if not positions:
+        logger.info("No open positions")
+        return
+    for sym, pos in positions.items():
+        logger.info(
+            f"  POSITION {sym}: "
+            f"qty={pos['qty']:.6f} | "
+            f"avg_entry={pos['avg_entry']:.4f} | "
+            f"unrealized_pl=${pos['unrealized_pl']:.2f}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Main scan cycle
+# ---------------------------------------------------------------------------
+
+def run_scan_cycle() -> None:
+    """
+    Scan all configured symbols for a VWAP pullback setup and place orders
+    when conditions are met and daily limits allow.
+    """
+    stats        = get_today_stats()
+    trades_today = stats["trades_today"]
+    daily_pnl    = stats["daily_pnl"]
+
+    can_trade, limit_reason = check_daily_limits(trades_today, daily_pnl)
+    if not can_trade:
+        logger.info(f"Trading paused: {limit_reason}")
+        return
+
+    account        = get_account_info()
+    open_symbols   = get_open_trade_symbols()
+
+    logger.info(
+        format_account_line(account, trades_today, daily_pnl)
+    )
+
+    if "ACTIVE" not in str(account["status"]).upper():
+        logger.warning(f"Account status is '{account['status']}' — halting scan")
+        return
+
+    for symbol in config.SYMBOLS:
+        if not _running:
+            break
+
+        # Skip if we already placed a trade for this symbol today
+        if symbol in open_symbols:
+            logger.debug(f"{symbol}: Already have an open trade today — skipping")
+            continue
+
+        logger.debug(f"Scanning {symbol}…")
+
+        # ---- Data ----
+        bars = get_bars(symbol)
+        if bars.empty:
+            logger.debug(f"{symbol}: No bar data — skipping")
+            continue
+
+        quote = get_latest_quote(symbol)
+        if quote["ask"] <= 0:
+            logger.warning(f"{symbol}: Invalid quote — skipping")
+            continue
+
+        # ---- Signal detection ----
+        signal = detect_signal(
+            df=bars,
+            symbol=symbol,
+            ask_price=quote["ask"],
+            spread_pct=quote["spread_pct"],
+        )
+
+        if signal is None:
+            continue
+
+        # ---- Risk validation ----
+        ok, msg = validate_setup(signal.entry, signal.stop, signal.target)
+        if not ok:
+            logger.warning(f"{symbol}: Setup failed validation — {msg}")
+            continue
+
+        logger.info(f"Valid setup ▶ {symbol} {msg}")
+        logger.info(f"  Entry : {signal.entry:.6f}")
+        logger.info(f"  Stop  : {signal.stop:.6f}")
+        logger.info(f"  Target: {signal.target:.6f}")
+        logger.info(f"  Reason: {signal.reason}")
+
+        # ---- Order placement ----
+        order_info = place_order(signal)
+        if order_info:
+            log_trade(order_info)
+            logger.success(
+                f"Trade placed ✓ {symbol} | order_id={order_info['order_id']}"
+            )
+
+            # Send Discord update with the same Account: line used in logs.
+            post_trade_line = _build_account_line()
+            send_buy_submitted(order_info, post_trade_line)
+
+            # Refresh open_symbols so we don't double-enter this symbol
+            open_symbols = get_open_trade_symbols()
+        else:
+            logger.error(f"Order placement failed for {symbol}")
+
+        # Re-check daily limits after each order attempt
+        stats    = get_today_stats()
+        can_trade, limit_reason = check_daily_limits(
+            stats["trades_today"], stats["daily_pnl"]
+        )
+        if not can_trade:
+            logger.info(f"Limit reached after order: {limit_reason}")
+            break
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def main() -> None:
+    logger.info("=" * 60)
+    logger.info("  AlpacaCryptoTrader")
+    logger.info(f"  Mode    : {'PAPER TRADING' if config.ALPACA_PAPER else '⚠  LIVE TRADING'}")
+    logger.info(f"  Symbols : {', '.join(config.SYMBOLS)}")
+    logger.info(f"  Max trades/day : {config.MAX_TRADES_PER_DAY}")
+    logger.info(f"  Max risk/trade : ${config.MAX_RISK_PER_TRADE:.2f}")
+    logger.info(f"  Max daily loss : ${config.MAX_DAILY_LOSS:.2f}")
+    logger.info(f"  R:R target     : {config.REWARD_RISK_MIN} – {config.REWARD_RISK_TARGET}")
+    logger.info(f"  Bar timeframe  : {config.BAR_TIMEFRAME}")
+    logger.info(f"  Poll interval  : {config.POLL_INTERVAL_SECONDS}s")
+    logger.info("=" * 60)
+
+    ensure_journal()
+
+    # Verify Alpaca connectivity on startup
+    try:
+        account = get_account_info()
+        logger.info(
+            f"Connected to Alpaca ✓ | status={account['status']} | "
+            f"portfolio=${account['portfolio_value']:.2f}"
+        )
+    except Exception as exc:
+        logger.error(f"Cannot connect to Alpaca: {exc}")
+        logger.error("Check ALPACA_API_KEY and ALPACA_SECRET_KEY in your .env file.")
+        sys.exit(1)
+
+    # -----------------------------------------------------------------------
+    # Main loop
+    # -----------------------------------------------------------------------
+    while _running:
+        now = datetime.now(timezone.utc)
+        logger.info(f"──── Cycle {now.strftime('%Y-%m-%d %H:%M:%S')} UTC ────")
+
+        try:
+            sync_open_positions_to_journal()
+            log_position_summary()
+            run_scan_cycle()
+        except Exception as exc:
+            logger.error(f"Unhandled error in main loop: {exc}", exc_info=True)
+
+        if _running:
+            logger.debug(f"Sleeping {config.POLL_INTERVAL_SECONDS}s…")
+            # Sleep in short chunks so Ctrl+C is responsive
+            for _ in range(config.POLL_INTERVAL_SECONDS):
+                if not _running:
+                    break
+                time.sleep(1)
+
+    # Cleanup on exit
+    logger.info("Cancelling any open buy orders before exit…")
+    cancel_open_buy_orders()
+    logger.info("AlpacaCryptoTrader stopped.")
+
+
+if __name__ == "__main__":
+    main()
