@@ -56,7 +56,17 @@ Edit `.env`:
 ALPACA_API_KEY=PKXXXXXXXXXXXXXXXX
 ALPACA_SECRET_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ALPACA_PAPER=true       # keep true until you are consistently profitable
+DISCORD_WEBHOOK_URL=    # optional: Discord trade alerts webhook URL
 ```
+
+If you set `DISCORD_WEBHOOK_URL`, the bot posts trade alerts to Discord for:
+
+- BUY order submitted
+- BUY filled
+- SELL filled
+
+Each alert includes an explanation of what was bought/sold plus the same
+`Account: ...` summary line shown in logs.
 
 ### 3. Install Dependencies
 
