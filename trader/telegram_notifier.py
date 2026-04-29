@@ -1,21 +1,21 @@
 """
-Discord webhook notifications for trade events.
+Telegram notifications for trade events.
 
-Sends concise buy/sell alerts with account summary context and keeps a
-small on-disk cache of order IDs so the same fill is not posted repeatedly.
+Uses Telegram Bot API sendMessage endpoint and stores a small local cache of
+filled order IDs to avoid duplicate notifications across scan cycles.
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
 from typing import Any
-from urllib import request
+from urllib import parse, request
 
 from loguru import logger
 
 import config
 
-_NOTIFIED_FILE = Path("logs") / "discord_notified_orders.json"
+_NOTIFIED_FILE = Path("logs") / "telegram_notified_orders.json"
 
 
 def _load_notified_ids() -> set[str]:
@@ -26,7 +26,7 @@ def _load_notified_ids() -> set[str]:
         if isinstance(data, list):
             return {str(x) for x in data}
     except Exception as exc:
-        logger.error(f"Could not read Discord notified cache: {exc}")
+        logger.error(f"Could not read Telegram notified cache: {exc}")
     return set()
 
 
@@ -38,7 +38,7 @@ def _save_notified_ids(order_ids: set[str]) -> None:
             encoding="utf-8",
         )
     except Exception as exc:
-        logger.error(f"Could not write Discord notified cache: {exc}")
+        logger.error(f"Could not write Telegram notified cache: {exc}")
 
 
 def has_been_notified(order_id: str) -> bool:
@@ -51,29 +51,23 @@ def mark_notified(order_id: str) -> None:
     _save_notified_ids(order_ids)
 
 
-def format_account_line(account: dict[str, Any], trades_today: int, daily_pnl: float) -> str:
-    return (
-        f"Account: cash=${account['cash']:.2f} | "
-        f"portfolio=${account['portfolio_value']:.2f} | "
-        f"today: {trades_today}/{config.MAX_TRADES_PER_DAY} trades | "
-        f"day P&L: ${daily_pnl:.2f}"
-    )
-
-
 def _send_message(message: str) -> bool:
-    if not config.DISCORD_NOTIFICATIONS_ENABLED:
+    if not config.TELEGRAM_NOTIFICATIONS_ENABLED:
         return False
 
-    payload = {"content": message[:1900]}
-    data = json.dumps(payload).encode("utf-8")
+    endpoint = f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/sendMessage"
+    payload = parse.urlencode(
+        {
+            "chat_id": config.TELEGRAM_CHAT_ID,
+            "text": message[:3900],
+            "disable_web_page_preview": "true",
+        }
+    ).encode("utf-8")
 
     req = request.Request(
-        config.DISCORD_WEBHOOK_URL,
-        data=data,
-        headers={
-            "Content-Type": "application/json",
-            "User-Agent": "AlpacaCryptoTrader/1.0 (https://github.com/Defectuous/AlpacaCryptoTrader)",
-        },
+        endpoint,
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
         method="POST",
     )
 
@@ -81,10 +75,10 @@ def _send_message(message: str) -> bool:
         with request.urlopen(req, timeout=10) as response:
             if 200 <= response.status < 300:
                 return True
-            logger.error(f"Discord webhook returned status {response.status}")
+            logger.error(f"Telegram API returned status {response.status}")
             return False
     except Exception as exc:
-        logger.error(f"Discord webhook send failed: {exc}")
+        logger.error(f"Telegram message send failed: {exc}")
         return False
 
 
@@ -116,7 +110,6 @@ def send_fill_update(order: Any, account_line: str) -> bool:
     order_id = str(getattr(order, "id", ""))
 
     action = "BUY FILLED" if "BUY" in side else "SELL FILLED"
-
     explain = (
         f"Executed {action.lower()} for {symbol} "
         f"at {price:.8f} with qty {qty:.8f}."

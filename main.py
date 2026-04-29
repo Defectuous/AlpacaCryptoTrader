@@ -21,10 +21,16 @@ from data.market_data import get_bars, get_latest_quote
 from trader.alpaca_client import get_trading_client
 from trader.discord_notifier import (
     format_account_line,
-    has_been_notified,
-    mark_notified,
-    send_buy_submitted,
-    send_fill_update,
+    has_been_notified as discord_has_been_notified,
+    mark_notified as discord_mark_notified,
+    send_buy_submitted as discord_send_buy_submitted,
+    send_fill_update as discord_send_fill_update,
+)
+from trader.telegram_notifier import (
+    has_been_notified as telegram_has_been_notified,
+    mark_notified as telegram_mark_notified,
+    send_buy_submitted as telegram_send_buy_submitted,
+    send_fill_update as telegram_send_fill_update,
 )
 from trader.journal import (
     ensure_journal,
@@ -120,10 +126,18 @@ def sync_open_positions_to_journal() -> None:
             update_trade(order_id, status, filled_price, pnl)
 
             # Notify once per filled order (covers both BUY and SELL fills).
-            if status == "filled" and not has_been_notified(order_id):
+            if status == "filled" and (
+                (not discord_has_been_notified(order_id))
+                or (not telegram_has_been_notified(order_id))
+            ):
                 account_line = _build_account_line()
-                if send_fill_update(order, account_line):
-                    mark_notified(order_id)
+                if not discord_has_been_notified(order_id):
+                    if discord_send_fill_update(order, account_line):
+                        discord_mark_notified(order_id)
+
+                if not telegram_has_been_notified(order_id):
+                    if telegram_send_fill_update(order, account_line):
+                        telegram_mark_notified(order_id)
 
     except Exception as exc:
         logger.error(f"Position sync error: {exc}")
@@ -228,7 +242,8 @@ def run_scan_cycle() -> None:
 
             # Send Discord update with the same Account: line used in logs.
             post_trade_line = _build_account_line()
-            send_buy_submitted(order_info, post_trade_line)
+            discord_send_buy_submitted(order_info, post_trade_line)
+            telegram_send_buy_submitted(order_info, post_trade_line)
 
             # Refresh open_symbols so we don't double-enter this symbol
             open_symbols = get_open_trade_symbols()

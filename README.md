@@ -23,6 +23,8 @@ AlpacaCryptoTrader/
 │   └── market_data.py      ← Alpaca bar + quote fetching
 ├── trader/
 │   ├── alpaca_client.py    ← API client singleton
+│   ├── discord_notifier.py ← Discord webhook alerts
+│   ├── telegram_notifier.py← Telegram bot alerts
 │   ├── indicators.py       ← VWAP, EMA9/20, ATR, volume
 │   ├── strategy.py         ← signal detection (VWAP pullback)
 │   ├── risk_manager.py     ← position sizing, R:R validation, daily limits
@@ -50,6 +52,12 @@ AlpacaCryptoTrader/
 cp .env.example .env
 ```
 
+Windows PowerShell alternative:
+
+```powershell
+Copy-Item .env.example .env
+```
+
 Edit `.env`:
 
 ```
@@ -57,6 +65,8 @@ ALPACA_API_KEY=PKXXXXXXXXXXXXXXXX
 ALPACA_SECRET_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ALPACA_PAPER=true       # keep true until you are consistently profitable
 DISCORD_WEBHOOK_URL=    # optional: Discord trade alerts webhook URL
+TELEGRAM_BOT_TOKEN=     # optional: Telegram BotFather token
+TELEGRAM_CHAT_ID=       # optional: Telegram chat/channel ID
 ```
 
 If you set `DISCORD_WEBHOOK_URL`, the bot posts trade alerts to Discord for:
@@ -67,6 +77,9 @@ If you set `DISCORD_WEBHOOK_URL`, the bot posts trade alerts to Discord for:
 
 Each alert includes an explanation of what was bought/sold plus the same
 `Account: ...` summary line shown in logs.
+
+If you set both `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`, the same alerts
+are also sent to Telegram.
 
 ### 3. Install Dependencies
 
@@ -141,6 +154,7 @@ Daily limits     → Max 2 trades, max $2 loss — bot halts for the day
 | `MAX_DAILY_LOSS` | `$2.00` | Trading halts after this loss |
 | `MIN_POSITION_SIZE` | `$25` | Minimum notional per order |
 | `MAX_POSITION_SIZE` | `$50` | Maximum notional per order |
+| `MAX_ACCOUNT_USAGE_PCT` | `0.75` | Max share of portfolio the bot can deploy (keeps reserve cash) |
 | `REWARD_RISK_MIN` | `1.5` | Minimum R:R to take a trade |
 | `REWARD_RISK_TARGET` | `2.1` | R:R used for take-profit calculation |
 | `BAR_TIMEFRAME` | `"15Min"` | Chart timeframe for signal detection |
@@ -150,6 +164,12 @@ Daily limits     → Max 2 trades, max $2 loss — bot halts for the day
 | `VOLUME_MULTIPLIER` | `1.2` | Bounce bar volume vs average volume |
 | `MAX_SPREAD_PCT` | `0.5` | Skip symbol if spread exceeds this % |
 | `ALPACA_PAPER` | `true` | Paper trading mode |
+
+Notification settings are configured from `.env`:
+
+- `DISCORD_WEBHOOK_URL`
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
 
 ---
 
@@ -187,7 +207,7 @@ The bot **will not trade** when:
 
 ```bash
 # Create a systemd service
-sudo nano /etc/systemd/system/alpacacrader.service
+sudo nano /etc/systemd/system/alpacacryptotrader.service
 ```
 
 ```ini
@@ -209,9 +229,9 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable alpacacrader
-sudo systemctl start alpacacrader
-sudo journalctl -u alpacacrader -f
+sudo systemctl enable alpacacryptotrader
+sudo systemctl start alpacacryptotrader
+sudo journalctl -u alpacacryptotrader -f
 ```
 
 ---

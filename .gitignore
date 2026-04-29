@@ -13,3 +13,4 @@ env/
 logs/*.log
 logs/trade_journal.csv
 logs/discord_notified_orders.json
+logs/telegram_notified_orders.json
