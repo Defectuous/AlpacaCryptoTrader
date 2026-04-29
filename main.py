@@ -24,12 +24,14 @@ from trader.discord_notifier import (
     has_been_notified as discord_has_been_notified,
     mark_notified as discord_mark_notified,
     send_buy_submitted as discord_send_buy_submitted,
+    send_sell_submitted as discord_send_sell_submitted,
     send_fill_update as discord_send_fill_update,
 )
 from trader.telegram_notifier import (
     has_been_notified as telegram_has_been_notified,
     mark_notified as telegram_mark_notified,
     send_buy_submitted as telegram_send_buy_submitted,
+    send_sell_submitted as telegram_send_sell_submitted,
     send_fill_update as telegram_send_fill_update,
 )
 from trader.journal import (
@@ -114,14 +116,21 @@ def sync_open_positions_to_journal() -> None:
         for order in closed_orders:
             order_id = str(order.id)
             status   = str(order.status).lower()
+            side     = str(getattr(order, "side", "")).upper()
+            symbol   = str(getattr(order, "symbol", ""))
 
             filled_price: float | None = None
             pnl: float | None = None
+            filled_qty = float(getattr(order, "filled_qty", 0) or 0)
 
             if status == "filled" and order.filled_avg_price:
                 filled_price = float(order.filled_avg_price)
                 # P&L is tracked by Alpaca for the position; we log the fill price here.
                 # Accurate P&L will be in the position's unrealized/realized fields.
+                logger.success(
+                    f"{side} filled ✓ {symbol} | "
+                    f"qty={filled_qty:.8f} price={filled_price:.8f} order_id={order_id}"
+                )
 
             update_trade(order_id, status, filled_price, pnl)
 
@@ -237,13 +246,19 @@ def run_scan_cycle() -> None:
         if order_info:
             log_trade(order_info)
             logger.success(
-                f"Trade placed ✓ {symbol} | order_id={order_info['order_id']}"
+                f"BUY submitted ✓ {symbol} | order_id={order_info['order_id']}"
+            )
+            logger.info(
+                f"SELL exits armed ▶ {symbol} | "
+                f"take_profit={order_info['target']:.6f} stop_loss={order_info['stop']:.6f}"
             )
 
             # Send Discord update with the same Account: line used in logs.
             post_trade_line = _build_account_line()
             discord_send_buy_submitted(order_info, post_trade_line)
+            discord_send_sell_submitted(order_info, post_trade_line)
             telegram_send_buy_submitted(order_info, post_trade_line)
+            telegram_send_sell_submitted(order_info, post_trade_line)
 
             # Refresh open_symbols so we don't double-enter this symbol
             open_symbols = get_open_trade_symbols()

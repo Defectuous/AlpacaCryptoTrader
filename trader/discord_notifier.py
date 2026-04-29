@@ -103,6 +103,19 @@ def send_buy_submitted(order_info: dict[str, Any], account_line: str) -> bool:
     return _send_message(message)
 
 
+def send_sell_submitted(order_info: dict[str, Any], account_line: str) -> bool:
+    message = (
+        "SELL EXIT ORDERS ARMED\n"
+        f"Symbol: {order_info.get('symbol', '')}\n"
+        f"Qty: {float(order_info.get('qty', 0)):.8f}\n"
+        f"Take-profit: {float(order_info.get('target', 0)):.8f}\n"
+        f"Stop-loss: {float(order_info.get('stop', 0)):.8f}\n"
+        f"Linked BUY order: {order_info.get('order_id', '')}\n"
+        f"{account_line}"
+    )
+    return _send_message(message)
+
+
 def send_fill_update(order: Any, account_line: str) -> bool:
     side = str(getattr(order, "side", "")).upper()
     status = str(getattr(order, "status", "")).lower()
