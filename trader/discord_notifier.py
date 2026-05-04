@@ -16,39 +16,55 @@ from loguru import logger
 import config
 
 _NOTIFIED_FILE = Path("logs") / "discord_notified_orders.json"
+_MAX_CACHE_SIZE = 500  # prune to this many IDs to prevent unbounded growth
+
+# In-memory cache — loaded once at module import
+_notified_ids: set[str] = set()
 
 
-def _load_notified_ids() -> set[str]:
+def _load_notified_ids() -> None:
+    """Populate the in-memory set from disk (called once at startup)."""
+    global _notified_ids
     if not _NOTIFIED_FILE.exists():
-        return set()
+        return
     try:
         data = json.loads(_NOTIFIED_FILE.read_text(encoding="utf-8"))
         if isinstance(data, list):
-            return {str(x) for x in data}
+            _notified_ids = {str(x) for x in data}
     except Exception as exc:
         logger.error(f"Could not read Discord notified cache: {exc}")
-    return set()
 
 
-def _save_notified_ids(order_ids: set[str]) -> None:
+def _save_notified_ids() -> None:
     _NOTIFIED_FILE.parent.mkdir(exist_ok=True)
     try:
+        ids_to_save = sorted(_notified_ids)
         _NOTIFIED_FILE.write_text(
-            json.dumps(sorted(order_ids), indent=2),
+            json.dumps(ids_to_save, indent=2),
             encoding="utf-8",
         )
     except Exception as exc:
         logger.error(f"Could not write Discord notified cache: {exc}")
 
 
+# Load cache at import time
+_load_notified_ids()
+
+
 def has_been_notified(order_id: str) -> bool:
-    return order_id in _load_notified_ids()
+    return order_id in _notified_ids
 
 
 def mark_notified(order_id: str) -> None:
-    order_ids = _load_notified_ids()
-    order_ids.add(order_id)
-    _save_notified_ids(order_ids)
+    global _notified_ids
+    _notified_ids.add(order_id)
+    # Prune if growing too large (keep the most-recently-added entries is
+    # not deterministic with a set; prune by dropping sorted early entries)
+    if len(_notified_ids) > _MAX_CACHE_SIZE:
+        excess = len(_notified_ids) - _MAX_CACHE_SIZE
+        for old_id in sorted(_notified_ids)[:excess]:
+            _notified_ids.discard(old_id)
+    _save_notified_ids()
 
 
 def format_account_line(account: dict[str, Any], trades_today: int, daily_pnl: float) -> str:
@@ -89,14 +105,19 @@ def _send_message(message: str) -> bool:
 
 
 def send_buy_submitted(order_info: dict[str, Any], account_line: str) -> bool:
+    side = str(order_info.get("side", "LONG")).upper()
+    label = "SHORT ORDER SUBMITTED" if side == "SHORT" else "LONG ORDER SUBMITTED"
+    regime = order_info.get("regime", "")
+    risk_profile = order_info.get("risk_profile", "")
     message = (
-        "BUY ORDER SUBMITTED\n"
+        f"{label}\n"
         f"Symbol: {order_info.get('symbol', '')}\n"
         f"Qty: {float(order_info.get('qty', 0)):.8f}\n"
         f"Entry: {float(order_info.get('entry', 0)):.8f}\n"
         f"Stop: {float(order_info.get('stop', 0)):.8f}\n"
         f"Target: {float(order_info.get('target', 0)):.8f}\n"
         f"R:R: {float(order_info.get('rr', 0)):.2f}\n"
+        f"Regime: {regime} | Profile: {risk_profile}\n"
         f"Reason: {order_info.get('reason', '')}\n"
         f"{account_line}"
     )
@@ -104,13 +125,15 @@ def send_buy_submitted(order_info: dict[str, Any], account_line: str) -> bool:
 
 
 def send_sell_submitted(order_info: dict[str, Any], account_line: str) -> bool:
+    side = str(order_info.get("side", "LONG")).upper()
+    exit_label = "BUY-COVER" if side == "SHORT" else "SELL"
     message = (
-        "SELL EXIT ORDERS ARMED\n"
+        f"{exit_label} EXIT ORDERS ARMED\n"
         f"Symbol: {order_info.get('symbol', '')}\n"
         f"Qty: {float(order_info.get('qty', 0)):.8f}\n"
         f"Take-profit: {float(order_info.get('target', 0)):.8f}\n"
         f"Stop-loss: {float(order_info.get('stop', 0)):.8f}\n"
-        f"Linked BUY order: {order_info.get('order_id', '')}\n"
+        f"Linked order: {order_info.get('order_id', '')}\n"
         f"{account_line}"
     )
     return _send_message(message)

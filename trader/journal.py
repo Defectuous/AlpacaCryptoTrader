@@ -51,12 +51,31 @@ COLUMNS = [
 # ---------------------------------------------------------------------------
 
 def ensure_journal() -> None:
-    """Create the journal file with header row if it does not exist."""
+    """Create the journal file with header row if it does not exist.
+
+    Also migrates an existing file to add any new columns introduced since it
+    was first created — new columns are appended with empty values.
+    """
     JOURNAL_DIR.mkdir(exist_ok=True)
     if not JOURNAL_FILE.exists():
         with JOURNAL_FILE.open("w", newline="") as fh:
             csv.DictWriter(fh, fieldnames=COLUMNS).writeheader()
         logger.info(f"Journal created → {JOURNAL_FILE.resolve()}")
+        return
+
+    # Migration: add any missing columns to existing file
+    try:
+        df = pd.read_csv(JOURNAL_FILE, dtype=str)
+        missing = [c for c in COLUMNS if c not in df.columns]
+        if missing:
+            for col in missing:
+                df[col] = ""
+            # Reorder to match canonical column list
+            df = df.reindex(columns=COLUMNS, fill_value="")
+            df.to_csv(JOURNAL_FILE, index=False)
+            logger.info(f"Journal migrated — added columns: {missing}")
+    except Exception as exc:
+        logger.warning(f"Journal migration check failed: {exc}")
 
 
 # ---------------------------------------------------------------------------
@@ -149,8 +168,8 @@ def update_trade(
                     row = df[mask].iloc[0]
                     entry_p = float(row["entry_price"])
                     qty_val = float(row["qty"])
-                    side = str(row.get("side", "BUY")).upper()
-                    if side == "SELL":  # short position
+                    side = str(row.get("side", "LONG")).upper()
+                    if side == "SHORT":
                         pnl_usd = (entry_p - exit_price) * qty_val
                     else:
                         pnl_usd = (exit_price - entry_p) * qty_val

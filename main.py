@@ -110,7 +110,7 @@ def sync_open_positions_to_journal() -> None:
 
         client = get_trading_client()
         closed_orders = client.get_orders(
-            GetOrdersRequest(status=QueryOrderStatus.CLOSED, limit=50)
+            GetOrdersRequest(status=QueryOrderStatus.CLOSED, limit=500)
         )
 
         for order in closed_orders:
@@ -259,6 +259,14 @@ def run_scan_cycle() -> None:
         # Resolve profile object for order sizing
         from trader.risk_manager import HIGH_RISK_PROFILE
         profile = HIGH_RISK_PROFILE if signal.risk_profile == "higher-risk" else STANDARD_PROFILE
+
+        # Enforce max open positions for the resolved profile
+        if len(live_positions) >= profile.max_open_positions:
+            logger.info(
+                f"{symbol}: Max open positions for [{profile.name}] profile "
+                f"({len(live_positions)}/{profile.max_open_positions}) — skipping"
+            )
+            continue
 
         # ---- Order placement ----
         order_info = place_order(signal, profile)

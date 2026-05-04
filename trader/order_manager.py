@@ -84,11 +84,14 @@ def get_open_orders(symbol: str | None = None) -> list:
 # Order placement
 # ---------------------------------------------------------------------------
 
-def _check_buying_power(qty: float, entry: float, symbol: str) -> bool:
-    """Return True if the account has enough available buying power for the trade."""
+def _check_buying_power(qty: float, entry: float, symbol: str, buying_power: float | None = None) -> bool:
+    """Return True if the account has enough available buying power for the trade.
+
+    Pass *buying_power* to reuse an already-fetched value and avoid a second
+    API call.  If omitted it is fetched from Alpaca.
+    """
     notional = qty * entry
-    account  = get_account_info()
-    bp       = account["buying_power"]
+    bp = buying_power if buying_power is not None else get_account_info()["buying_power"]
 
     if notional > bp:
         logger.warning(
@@ -136,12 +139,12 @@ def place_limit_bracket_order(signal: TradeSignal, profile: RiskProfile) -> Opti
         return None
 
     account = get_account_info()
-    qty = calculate_position_qty(signal.entry, signal.stop, account["portfolio_value"], profile)
+    qty = calculate_position_qty(signal.entry, signal.stop, account["portfolio_value"], profile, signal.side)
     if qty <= 0:
         logger.error(f"{signal.symbol}: Position qty is zero — check stop distance or risk cap")
         return None
 
-    if not _check_buying_power(qty, signal.entry, signal.symbol):
+    if not _check_buying_power(qty, signal.entry, signal.symbol, account["buying_power"]):
         return None
 
     order_side = OrderSide.SELL if signal.side == "short" else OrderSide.BUY
@@ -178,12 +181,12 @@ def place_market_bracket_order(signal: TradeSignal, profile: RiskProfile) -> Opt
         return None
 
     account = get_account_info()
-    qty = calculate_position_qty(signal.entry, signal.stop, account["portfolio_value"], profile)
+    qty = calculate_position_qty(signal.entry, signal.stop, account["portfolio_value"], profile, signal.side)
     if qty <= 0:
         logger.error(f"{signal.symbol}: Position qty is zero — check stop distance or risk cap")
         return None
 
-    if not _check_buying_power(qty, signal.entry, signal.symbol):
+    if not _check_buying_power(qty, signal.entry, signal.symbol, account["buying_power"]):
         return None
 
     order_side = OrderSide.SELL if signal.side == "short" else OrderSide.BUY

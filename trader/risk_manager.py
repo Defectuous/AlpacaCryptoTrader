@@ -5,20 +5,46 @@ Handles:
   - Dual risk profile selection (auto-selected by volatility regime)
   - Position sizing (percentage-of-equity risk, notional clamped, true risk enforced)
   - Daily trade / loss limit enforcement
-  - Drawdown high-water-mark tracking and pause enforcement
+  - Drawdown high-water-mark tracking and pause enforcement (persisted to disk)
   - Trade setup validation (R:R ratio check)
 """
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
 from loguru import logger
 
 import config
 
 # ---------------------------------------------------------------------------
-# High-water mark tracking (in-memory; resets on process restart)
+# High-water mark tracking (persisted across restarts)
 # ---------------------------------------------------------------------------
+_HWM_FILE = Path("logs") / "equity_hwm.json"
 _equity_hwm: float = 0.0
+
+
+def _load_hwm() -> float:
+    """Load the persisted HWM value from disk, or return 0.0 if absent."""
+    try:
+        if _HWM_FILE.exists():
+            data = json.loads(_HWM_FILE.read_text(encoding="utf-8"))
+            return float(data.get("hwm", 0.0))
+    except Exception as exc:
+        logger.warning(f"Could not read HWM file: {exc}")
+    return 0.0
+
+
+def _save_hwm(value: float) -> None:
+    try:
+        _HWM_FILE.parent.mkdir(exist_ok=True)
+        _HWM_FILE.write_text(json.dumps({"hwm": value}), encoding="utf-8")
+    except Exception as exc:
+        logger.warning(f"Could not persist HWM: {exc}")
+
+
+# Initialise from disk at module load time
+_equity_hwm = _load_hwm()
 
 
 def update_hwm(portfolio_value: float) -> None:
@@ -26,6 +52,7 @@ def update_hwm(portfolio_value: float) -> None:
     global _equity_hwm
     if portfolio_value > _equity_hwm:
         _equity_hwm = portfolio_value
+        _save_hwm(_equity_hwm)
 
 
 # ---------------------------------------------------------------------------
@@ -90,23 +117,25 @@ def calculate_position_qty(
     stop: float,
     portfolio_value: float,
     profile: RiskProfile,
+    side: str = "long",
 ) -> float:
     """
     Calculate order quantity (in coin units) using percentage-of-equity risk.
 
-    Steps:
-      1. Derive max risk in USD from profile.risk_pct_per_trade * portfolio.
-      2. Compute raw qty = risk_usd / stop_distance.
-      3. Clamp resulting notional to [MIN_POSITION_SIZE, MAX_POSITION_SIZE].
-      4. Recompute final qty and verify effective risk does not exceed cap.
-
+    Supports both long (stop < entry) and short (stop > entry) geometries.
     Returns 0.0 if the setup is geometrically invalid or risk cap breached.
     """
-    if entry <= 0 or stop <= 0 or stop >= entry or portfolio_value <= 0:
+    if entry <= 0 or stop <= 0 or portfolio_value <= 0:
         return 0.0
 
-    stop_distance = entry - stop
+    stop_distance = abs(entry - stop)
     if stop_distance <= 0:
+        return 0.0
+
+    # Validate geometry by side
+    if side == "long" and stop >= entry:
+        return 0.0
+    if side == "short" and stop <= entry:
         return 0.0
 
     max_risk_usd = portfolio_value * profile.risk_pct_per_trade
