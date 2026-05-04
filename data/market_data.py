@@ -77,6 +77,56 @@ def get_bars(symbol: str, lookback: int = config.BARS_LOOKBACK) -> pd.DataFrame:
 
     except Exception as exc:
         logger.error(f"{symbol}: Error fetching bars — {exc}")
+            except Exception as exc:
+                logger.error(f"{symbol}: Error fetching bars — {exc}")
+                return pd.DataFrame()
+
+
+        def get_bars_history(
+            symbol: str,
+            start: datetime,
+            end: datetime,
+            timeframe_str: str | None = None,
+        ) -> pd.DataFrame:
+            """
+            Fetch all OHLCV bars for *symbol* between *start* and *end*.
+
+            Unlike get_bars(), which fetches a fixed lookback from "now", this
+            function fetches a specific date range — intended for backtesting.
+
+            Returns an empty DataFrame on any error.
+            """
+            tf_str    = timeframe_str or config.BAR_TIMEFRAME
+            timeframe = _TIMEFRAME_MAP.get(tf_str, TimeFrame(15, TimeFrameUnit.Minute))
+
+            try:
+                request = CryptoBarsRequest(
+                    symbol_or_symbols=symbol,
+                    timeframe=timeframe,
+                    start=start,
+                    end=end,
+                )
+                bars = get_data_client().get_crypto_bars(request)
+                df: pd.DataFrame = bars.df
+
+                if df.empty:
+                    logger.warning(f"{symbol}: No historical bars returned from Alpaca")
+                    return pd.DataFrame()
+
+                if isinstance(df.index, pd.MultiIndex):
+                    df = df.xs(symbol, level="symbol")
+
+                df.index = pd.to_datetime(df.index, utc=True)
+                df = df.sort_index().copy()
+                logger.info(f"{symbol}: {len(df)} bars fetched ({start.date()} → {end.date()})")
+                return df
+
+            except Exception as exc:
+                logger.error(f"{symbol}: Error fetching history — {exc}")
+                return pd.DataFrame()
+
+
+        def get_latest_quote
         return pd.DataFrame()
 
 

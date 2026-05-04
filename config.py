@@ -23,7 +23,17 @@ TELEGRAM_NOTIFICATIONS_ENABLED: bool = bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT
 # ---------------------------------------------------------------------------
 # Symbols to watch
 # ---------------------------------------------------------------------------
-SYMBOLS: list[str] = ["BTC/USD", "ETH/USD", "SOL/USD", "DOGE/USD", "XRP/USD", "ADA/USD"]
+# High-liquidity symbols only — DOGE and ADA removed (consistently fail the
+# MIN_LIQUIDITY_VOLUME_USD filter at 15-min resolution).
+SYMBOLS: list[str] = [
+	"BTC/USD",
+	"ETH/USD",
+	"SOL/USD",
+	"LTC/USD",
+	"LINK/USD",
+	"AVAX/USD",
+	"XRP/USD",
+]
 
 # ---------------------------------------------------------------------------
 # Risk profiles  (auto-selected based on realised volatility regime)
@@ -51,6 +61,10 @@ HIGH_RISK_ATR_THRESHOLD: float = 0.025    # 2.5 % ATR/price
 MAX_TRADES_PER_DAY: int = 5          # hard cap on entries per day
 MAX_RISK_PER_TRADE: float = 1.00     # USD minimum risk floor (overridden by pct-based sizing)
 MAX_DAILY_LOSS: float = 2.00         # USD minimum floor (overridden by pct-based sizing)
+
+# Minimum 20-bar average volume (in USD notional) for a symbol to be tradable.
+# Lowered 10 % from 500 → 450 to allow borderline-liquid alts through.
+MIN_LIQUIDITY_VOLUME_USD: float = 450.0
 
 MIN_POSITION_SIZE: float = 10.00     # USD notional minimum
 MAX_POSITION_SIZE: float = 100.00    # USD notional maximum
@@ -101,9 +115,6 @@ USE_CLOSED_CANDLE: bool = True
 # ---------------------------------------------------------------------------
 # Maximum estimated entry slippage as fraction of entry price.
 MAX_SLIPPAGE_PCT: float = 0.002       # 0.2 %
-
-# Minimum 20-bar average volume (in USD notional) for a symbol to be tradable.
-MIN_LIQUIDITY_VOLUME_USD: float = 500.0
 
 # ---------------------------------------------------------------------------
 # Short-side trading
