@@ -2,6 +2,7 @@
 Order placement and position monitoring.
 
 Supports bracket orders (limit or market entry + automatic TP + SL).
+Supports both long and short entries (short only when ENABLE_SHORT_SELLING=True).
 Falls back gracefully when the API rejects a request.
 """
 from __future__ import annotations
@@ -25,7 +26,7 @@ from loguru import logger
 
 import config
 from trader.alpaca_client import get_trading_client
-from trader.risk_manager import calculate_position_qty
+from trader.risk_manager import RiskProfile, calculate_position_qty
 from trader.strategy import TradeSignal
 
 
@@ -84,28 +85,10 @@ def get_open_orders(symbol: str | None = None) -> list:
 # ---------------------------------------------------------------------------
 
 def _check_buying_power(qty: float, entry: float, symbol: str) -> bool:
-    """Return True if the account has enough buying power for the trade.
-
-    Also enforces MAX_ACCOUNT_USAGE_PCT so that a reserve of cash is
-    always kept back (default: 25% reserve, 75% deployable).
-    """
+    """Return True if the account has enough available buying power for the trade."""
     notional = qty * entry
     account  = get_account_info()
     bp       = account["buying_power"]
-    portfolio = account["portfolio_value"]
-
-    # Hard cap: never deploy more than MAX_ACCOUNT_USAGE_PCT of portfolio
-    max_deployable = portfolio * config.MAX_ACCOUNT_USAGE_PCT
-    already_deployed = portfolio - bp          # rough estimate via positions
-    remaining_allowance = max(0.0, max_deployable - already_deployed)
-
-    if notional > remaining_allowance:
-        logger.warning(
-            f"{symbol}: Reserve limit would be breached — "
-            f"need ${notional:.2f}, allowance=${remaining_allowance:.2f} "
-            f"(max {config.MAX_ACCOUNT_USAGE_PCT*100:.0f}% of ${portfolio:.2f})"
-        )
-        return False
 
     if notional > bp:
         logger.warning(
@@ -117,27 +100,56 @@ def _check_buying_power(qty: float, entry: float, symbol: str) -> bool:
     return True
 
 
-def place_limit_bracket_order(signal: TradeSignal) -> Optional[dict]:
-    """
-    Place a bracket order with a LIMIT entry.
+def _has_open_position(symbol: str) -> bool:
+    """Return True if Alpaca already has an open position in this symbol."""
+    positions = get_open_positions()
+    if symbol in positions:
+        logger.debug(f"{symbol}: Live position already open — skipping")
+        return True
+    return False
 
-    The bracket attaches a take-profit limit order and a stop-loss market
-    order.  Alpaca manages the exit legs automatically once the entry fills.
 
-    Returns a result dict on success, None on failure.
-    """
-    qty = calculate_position_qty(signal.entry, signal.stop)
+def _result_dict(order, signal: TradeSignal, qty: float) -> dict:
+    return {
+        "order_id":     str(order.id),
+        "symbol":       signal.symbol,
+        "side":         signal.side.upper(),
+        "qty":          qty,
+        "entry":        signal.entry,
+        "stop":         signal.stop,
+        "target":       signal.target,
+        "rr":           signal.rr,
+        "status":       str(order.status),
+        "reason":       signal.reason,
+        "regime":       signal.regime,
+        "risk_profile": signal.risk_profile,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Order placement
+# ---------------------------------------------------------------------------
+
+def place_limit_bracket_order(signal: TradeSignal, profile: RiskProfile) -> Optional[dict]:
+    """Place a bracket order with a LIMIT entry."""
+    if _has_open_position(signal.symbol):
+        return None
+
+    account = get_account_info()
+    qty = calculate_position_qty(signal.entry, signal.stop, account["portfolio_value"], profile)
     if qty <= 0:
-        logger.error(f"{signal.symbol}: Position qty is zero — check stop distance")
+        logger.error(f"{signal.symbol}: Position qty is zero — check stop distance or risk cap")
         return None
 
     if not _check_buying_power(qty, signal.entry, signal.symbol):
         return None
 
+    order_side = OrderSide.SELL if signal.side == "short" else OrderSide.BUY
     logger.info(
-        f"Placing LIMIT bracket order — {signal.symbol} "
+        f"Placing LIMIT bracket {signal.side.upper()} — {signal.symbol} "
         f"qty={qty:.8f} entry={signal.entry:.6f} "
-        f"stop={signal.stop:.6f} target={signal.target:.6f}"
+        f"stop={signal.stop:.6f} target={signal.target:.6f} "
+        f"[{signal.risk_profile}]"
     )
 
     try:
@@ -145,7 +157,7 @@ def place_limit_bracket_order(signal: TradeSignal) -> Optional[dict]:
             LimitOrderRequest(
                 symbol=signal.symbol,
                 qty=qty,
-                side=OrderSide.BUY,
+                side=order_side,
                 time_in_force=TimeInForce.GTC,
                 limit_price=round(signal.entry, 8),
                 order_class=OrderClass.BRACKET,
@@ -154,40 +166,31 @@ def place_limit_bracket_order(signal: TradeSignal) -> Optional[dict]:
             )
         )
         logger.success(f"{signal.symbol}: Order submitted — id={order.id} status={order.status}")
-        return {
-            "order_id": str(order.id),
-            "symbol":   signal.symbol,
-            "qty":      qty,
-            "entry":    signal.entry,
-            "stop":     signal.stop,
-            "target":   signal.target,
-            "rr":       signal.rr,
-            "status":   str(order.status),
-            "reason":   signal.reason,
-        }
+        return _result_dict(order, signal, qty)
     except Exception as exc:
         logger.error(f"{signal.symbol}: Limit bracket order failed — {exc}")
         return None
 
 
-def place_market_bracket_order(signal: TradeSignal) -> Optional[dict]:
-    """
-    Place a bracket order with a MARKET entry.
+def place_market_bracket_order(signal: TradeSignal, profile: RiskProfile) -> Optional[dict]:
+    """Place a bracket order with a MARKET entry."""
+    if _has_open_position(signal.symbol):
+        return None
 
-    Use when speed matters more than exact fill price.
-    Returns a result dict on success, None on failure.
-    """
-    qty = calculate_position_qty(signal.entry, signal.stop)
+    account = get_account_info()
+    qty = calculate_position_qty(signal.entry, signal.stop, account["portfolio_value"], profile)
     if qty <= 0:
-        logger.error(f"{signal.symbol}: Position qty is zero — check stop distance")
+        logger.error(f"{signal.symbol}: Position qty is zero — check stop distance or risk cap")
         return None
 
     if not _check_buying_power(qty, signal.entry, signal.symbol):
         return None
 
+    order_side = OrderSide.SELL if signal.side == "short" else OrderSide.BUY
     logger.info(
-        f"Placing MARKET bracket order — {signal.symbol} "
-        f"qty={qty:.8f} stop={signal.stop:.6f} target={signal.target:.6f}"
+        f"Placing MARKET bracket {signal.side.upper()} — {signal.symbol} "
+        f"qty={qty:.8f} stop={signal.stop:.6f} target={signal.target:.6f} "
+        f"[{signal.risk_profile}]"
     )
 
     try:
@@ -195,7 +198,7 @@ def place_market_bracket_order(signal: TradeSignal) -> Optional[dict]:
             MarketOrderRequest(
                 symbol=signal.symbol,
                 qty=qty,
-                side=OrderSide.BUY,
+                side=order_side,
                 time_in_force=TimeInForce.GTC,
                 order_class=OrderClass.BRACKET,
                 take_profit=TakeProfitRequest(limit_price=round(signal.target, 8)),
@@ -203,34 +206,24 @@ def place_market_bracket_order(signal: TradeSignal) -> Optional[dict]:
             )
         )
         logger.success(f"{signal.symbol}: Market order submitted — id={order.id} status={order.status}")
-        return {
-            "order_id": str(order.id),
-            "symbol":   signal.symbol,
-            "qty":      qty,
-            "entry":    signal.entry,
-            "stop":     signal.stop,
-            "target":   signal.target,
-            "rr":       signal.rr,
-            "status":   str(order.status),
-            "reason":   signal.reason,
-        }
+        return _result_dict(order, signal, qty)
     except Exception as exc:
         logger.error(f"{signal.symbol}: Market bracket order failed — {exc}")
         return None
 
 
-def place_order(signal: TradeSignal) -> Optional[dict]:
+def place_order(signal: TradeSignal, profile: RiskProfile) -> Optional[dict]:
     """
     Place the appropriate order type based on config.USE_LIMIT_ORDERS.
     Falls back to market order if the limit order fails.
     """
     if config.USE_LIMIT_ORDERS:
-        result = place_limit_bracket_order(signal)
+        result = place_limit_bracket_order(signal, profile)
         if result is None:
             logger.warning(f"{signal.symbol}: Limit order failed — attempting market order")
-            result = place_market_bracket_order(signal)
+            result = place_market_bracket_order(signal, profile)
         return result
-    return place_market_bracket_order(signal)
+    return place_market_bracket_order(signal, profile)
 
 
 def cancel_open_buy_orders(symbol: str | None = None) -> None:

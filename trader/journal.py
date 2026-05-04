@@ -27,6 +27,7 @@ COLUMNS = [
     "time_utc",
     "symbol",
     "order_id",
+    "exit_order_id",
     "side",
     "entry_price",
     "stop_price",
@@ -36,6 +37,8 @@ COLUMNS = [
     "risk_usd",
     "reward_usd",
     "rr_ratio",
+    "regime",
+    "risk_profile",
     "status",
     "exit_price",
     "pnl_usd",
@@ -84,7 +87,8 @@ def log_trade(order_info: dict) -> None:
         "time_utc":      now.strftime("%H:%M:%S"),
         "symbol":        order_info.get("symbol", ""),
         "order_id":      order_info.get("order_id", ""),
-        "side":          "BUY",
+        "exit_order_id": "",
+        "side":          order_info.get("side", "BUY"),
         "entry_price":   round(entry,  8),
         "stop_price":    round(stop,   8),
         "target_price":  round(target, 8),
@@ -93,6 +97,8 @@ def log_trade(order_info: dict) -> None:
         "risk_usd":      round(risk_usd,    4),
         "reward_usd":    round(reward_usd,  4),
         "rr_ratio":      round(rr_ratio,    2),
+        "regime":        order_info.get("regime", ""),
+        "risk_profile":  order_info.get("risk_profile", ""),
         "status":        order_info.get("status", "pending"),
         "exit_price":    "",
         "pnl_usd":       "",
@@ -113,18 +119,43 @@ def update_trade(
     status: str,
     exit_price: float | None = None,
     pnl_usd: float | None = None,
+    exit_order_id: str | None = None,
 ) -> None:
-    """Update status, exit price, and P&L for a previously logged trade."""
+    """Update status, exit price, and P&L for a previously logged trade.
+
+    If exit_price is provided but pnl_usd is not, compute realized P&L from
+    the journal's entry_price and qty so the daily breaker has accurate data.
+    """
     ensure_journal()
     try:
         df = pd.read_csv(JOURNAL_FILE, dtype=str)
         mask = df["order_id"] == order_id
+
+        # Also match by exit_order_id so exit fills update the right row
+        if not mask.any() and exit_order_id:
+            mask = df["exit_order_id"] == exit_order_id
+
         if not mask.any():
             return
 
         df.loc[mask, "status"] = status
+        if exit_order_id:
+            df.loc[mask, "exit_order_id"] = exit_order_id
         if exit_price is not None:
             df.loc[mask, "exit_price"] = str(round(exit_price, 8))
+            # Compute P&L when not supplied externally
+            if pnl_usd is None:
+                try:
+                    row = df[mask].iloc[0]
+                    entry_p = float(row["entry_price"])
+                    qty_val = float(row["qty"])
+                    side = str(row.get("side", "BUY")).upper()
+                    if side == "SELL":  # short position
+                        pnl_usd = (entry_p - exit_price) * qty_val
+                    else:
+                        pnl_usd = (exit_price - entry_p) * qty_val
+                except Exception:
+                    pass
         if pnl_usd is not None:
             df.loc[mask, "pnl_usd"] = str(round(pnl_usd, 4))
 
@@ -177,7 +208,7 @@ def get_open_trade_symbols() -> list[str]:
     Used to prevent opening a second position in the same coin.
     """
     ensure_journal()
-    open_statuses = {"new", "pending", "accepted", "partially_filled", "held"}
+    open_statuses = {"new", "pending", "accepted", "partially_filled", "held", "filled"}
     try:
         df = pd.read_csv(JOURNAL_FILE, dtype=str)
         if df.empty:

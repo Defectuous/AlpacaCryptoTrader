@@ -48,7 +48,7 @@ from trader.order_manager import (
     get_open_positions,
     place_order,
 )
-from trader.risk_manager import check_daily_limits, validate_setup
+from trader.risk_manager import check_daily_limits, validate_setup, select_risk_profile, update_hwm
 from trader.strategy import detect_signal
 
 # ---------------------------------------------------------------------------
@@ -120,19 +120,17 @@ def sync_open_positions_to_journal() -> None:
             symbol   = str(getattr(order, "symbol", ""))
 
             filled_price: float | None = None
-            pnl: float | None = None
             filled_qty = float(getattr(order, "filled_qty", 0) or 0)
 
             if status == "filled" and order.filled_avg_price:
                 filled_price = float(order.filled_avg_price)
-                # P&L is tracked by Alpaca for the position; we log the fill price here.
-                # Accurate P&L will be in the position's unrealized/realized fields.
                 logger.success(
                     f"{side} filled ✓ {symbol} | "
                     f"qty={filled_qty:.8f} price={filled_price:.8f} order_id={order_id}"
                 )
 
-            update_trade(order_id, status, filled_price, pnl)
+            # update_trade computes PnL from entry_price/qty when exit_price is supplied
+            update_trade(order_id, status, filled_price)
 
             # Notify once per filled order (covers both BUY and SELL fills).
             if status == "filled" and (
@@ -173,19 +171,30 @@ def log_position_summary() -> None:
 
 def run_scan_cycle() -> None:
     """
-    Scan all configured symbols for a VWAP pullback setup and place orders
-    when conditions are met and daily limits allow.
+    Scan all configured symbols for a VWAP pullback/rejection setup and place
+    orders when conditions are met and daily limits allow.
     """
     stats        = get_today_stats()
     trades_today = stats["trades_today"]
     daily_pnl    = stats["daily_pnl"]
 
-    can_trade, limit_reason = check_daily_limits(trades_today, daily_pnl)
+    account = get_account_info()
+    portfolio_value = account["portfolio_value"]
+
+    # Update high-water mark every cycle
+    update_hwm(portfolio_value)
+
+    # Use a placeholder profile for the daily limit check
+    # (actual profile is determined per-signal via ATR)
+    from trader.risk_manager import STANDARD_PROFILE
+    can_trade, limit_reason = check_daily_limits(
+        trades_today, daily_pnl, portfolio_value, STANDARD_PROFILE
+    )
     if not can_trade:
         logger.info(f"Trading paused: {limit_reason}")
         return
 
-    account        = get_account_info()
+    live_positions = get_open_positions()
     open_symbols   = get_open_trade_symbols()
 
     logger.info(
@@ -200,9 +209,14 @@ def run_scan_cycle() -> None:
         if not _running:
             break
 
-        # Skip if we already placed a trade for this symbol today
+        # Skip if a live position already exists for this symbol
+        if symbol in live_positions:
+            logger.debug(f"{symbol}: Live position exists — skipping")
+            continue
+
+        # Skip if journal shows an open/pending trade today
         if symbol in open_symbols:
-            logger.debug(f"{symbol}: Already have an open trade today — skipping")
+            logger.debug(f"{symbol}: Journal shows open trade today — skipping")
             continue
 
         logger.debug(f"Scanning {symbol}…")
@@ -218,11 +232,12 @@ def run_scan_cycle() -> None:
             logger.warning(f"{symbol}: Invalid quote — skipping")
             continue
 
-        # ---- Signal detection ----
+        # ---- Signal detection (includes profile auto-selection) ----
         signal = detect_signal(
             df=bars,
             symbol=symbol,
             ask_price=quote["ask"],
+            bid_price=quote["bid"],
             spread_pct=quote["spread_pct"],
         )
 
@@ -230,45 +245,51 @@ def run_scan_cycle() -> None:
             continue
 
         # ---- Risk validation ----
-        ok, msg = validate_setup(signal.entry, signal.stop, signal.target)
+        ok, msg = validate_setup(signal.entry, signal.stop, signal.target, side=signal.side)
         if not ok:
             logger.warning(f"{symbol}: Setup failed validation — {msg}")
             continue
 
-        logger.info(f"Valid setup ▶ {symbol} {msg}")
+        logger.info(f"Valid {signal.side.upper()} setup ▶ {symbol} {msg} [{signal.risk_profile}]")
         logger.info(f"  Entry : {signal.entry:.6f}")
         logger.info(f"  Stop  : {signal.stop:.6f}")
         logger.info(f"  Target: {signal.target:.6f}")
         logger.info(f"  Reason: {signal.reason}")
 
+        # Resolve profile object for order sizing
+        from trader.risk_manager import HIGH_RISK_PROFILE
+        profile = HIGH_RISK_PROFILE if signal.risk_profile == "higher-risk" else STANDARD_PROFILE
+
         # ---- Order placement ----
-        order_info = place_order(signal)
+        order_info = place_order(signal, profile)
         if order_info:
             log_trade(order_info)
+            side_label = "SHORT" if signal.side == "short" else "BUY"
             logger.success(
-                f"BUY submitted ✓ {symbol} | order_id={order_info['order_id']}"
+                f"{side_label} submitted ✓ {symbol} | order_id={order_info['order_id']}"
             )
             logger.info(
-                f"SELL exits armed ▶ {symbol} | "
+                f"Exits armed ▶ {symbol} | "
                 f"take_profit={order_info['target']:.6f} stop_loss={order_info['stop']:.6f}"
             )
 
-            # Send Discord update with the same Account: line used in logs.
             post_trade_line = _build_account_line()
             discord_send_buy_submitted(order_info, post_trade_line)
             discord_send_sell_submitted(order_info, post_trade_line)
             telegram_send_buy_submitted(order_info, post_trade_line)
             telegram_send_sell_submitted(order_info, post_trade_line)
 
-            # Refresh open_symbols so we don't double-enter this symbol
-            open_symbols = get_open_trade_symbols()
+            # Refresh state so next symbol uses updated exposure
+            open_symbols   = get_open_trade_symbols()
+            live_positions = get_open_positions()
         else:
             logger.error(f"Order placement failed for {symbol}")
 
         # Re-check daily limits after each order attempt
-        stats    = get_today_stats()
+        stats = get_today_stats()
         can_trade, limit_reason = check_daily_limits(
-            stats["trades_today"], stats["daily_pnl"]
+            stats["trades_today"], stats["daily_pnl"],
+            portfolio_value, STANDARD_PROFILE
         )
         if not can_trade:
             logger.info(f"Limit reached after order: {limit_reason}")
@@ -282,14 +303,16 @@ def run_scan_cycle() -> None:
 def main() -> None:
     logger.info("=" * 60)
     logger.info("  AlpacaCryptoTrader")
-    logger.info(f"  Mode    : {'PAPER TRADING' if config.ALPACA_PAPER else '⚠  LIVE TRADING'}")
-    logger.info(f"  Symbols : {', '.join(config.SYMBOLS)}")
-    logger.info(f"  Max trades/day : {config.MAX_TRADES_PER_DAY}")
-    logger.info(f"  Max risk/trade : ${config.MAX_RISK_PER_TRADE:.2f}")
-    logger.info(f"  Max daily loss : ${config.MAX_DAILY_LOSS:.2f}")
-    logger.info(f"  R:R target     : {config.REWARD_RISK_MIN} – {config.REWARD_RISK_TARGET}")
-    logger.info(f"  Bar timeframe  : {config.BAR_TIMEFRAME}")
-    logger.info(f"  Poll interval  : {config.POLL_INTERVAL_SECONDS}s")
+    logger.info(f"  Mode      : {'PAPER TRADING' if config.ALPACA_PAPER else '⚠  LIVE TRADING'}")
+    logger.info(f"  Symbols   : {', '.join(config.SYMBOLS)}")
+    logger.info(f"  Short sell: {'ENABLED' if config.ENABLE_SHORT_SELLING else 'disabled'}")
+    logger.info(f"  Max trades/day  : {config.MAX_TRADES_PER_DAY}")
+    logger.info(f"  Std risk/trade  : {config.STANDARD_RISK_PCT_PER_TRADE*100:.1f}% of equity")
+    logger.info(f"  High risk/trade : {config.HIGH_RISK_PCT_PER_TRADE*100:.1f}% of equity (ATR>={config.HIGH_RISK_ATR_THRESHOLD*100:.1f}%)")
+    logger.info(f"  R:R target      : {config.REWARD_RISK_MIN} – {config.REWARD_RISK_TARGET}")
+    logger.info(f"  Bar timeframe   : {config.BAR_TIMEFRAME}")
+    logger.info(f"  Closed candle   : {config.USE_CLOSED_CANDLE}")
+    logger.info(f"  Poll interval   : {config.POLL_INTERVAL_SECONDS}s")
     logger.info("=" * 60)
 
     ensure_journal()

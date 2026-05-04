@@ -23,21 +23,41 @@ TELEGRAM_NOTIFICATIONS_ENABLED: bool = bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT
 # ---------------------------------------------------------------------------
 # Symbols to watch
 # ---------------------------------------------------------------------------
-SYMBOLS: list[str] = ["BTC/USD", "ETH/USD", "SOL/USD", "DOGE/USD", "XRP/USD", "USDC/USD", "ADA/USD"]
+SYMBOLS: list[str] = ["BTC/USD", "ETH/USD", "SOL/USD", "DOGE/USD", "XRP/USD", "ADA/USD"]
 
 # ---------------------------------------------------------------------------
-# Risk management (beginner plan: $100 account)
+# Risk profiles  (auto-selected based on realised volatility regime)
 # ---------------------------------------------------------------------------
-MAX_TRADES_PER_DAY: int = 2          # hard cap on entries per day
-MAX_RISK_PER_TRADE: float = 1.00     # USD risked per trade
-MAX_DAILY_LOSS: float = 2.00         # USD — halt trading after this loss
+# Standard — conservative defaults
+STANDARD_RISK_PCT_PER_TRADE: float = 0.010   # 1.0% of portfolio equity
+STANDARD_MAX_DAILY_LOSS_PCT: float  = 0.030   # 3.0% of portfolio equity
+STANDARD_MAX_DRAWDOWN_PCT: float    = 0.120   # 12 % from equity HWM → pause
+STANDARD_MAX_OPEN_POSITIONS: int    = 3
 
-MIN_POSITION_SIZE: float = 25.00     # USD notional minimum
-MAX_POSITION_SIZE: float = 50.00     # USD notional maximum
+# Higher-risk — wider limits, stricter kill-switches
+HIGH_RISK_PCT_PER_TRADE: float      = 0.020   # 2.0% of portfolio equity
+HIGH_RISK_MAX_DAILY_LOSS_PCT: float = 0.050   # 5.0% of portfolio equity
+HIGH_RISK_MAX_DRAWDOWN_PCT: float   = 0.180   # 18 % from equity HWM → pause
+HIGH_RISK_MAX_OPEN_POSITIONS: int   = 5
+
+# Volatility threshold that triggers auto-selection of the higher-risk profile.
+# When realised ATR% of price exceeds this, the higher-risk profile is chosen.
+# Set to a high value to effectively disable auto-escalation.
+HIGH_RISK_ATR_THRESHOLD: float = 0.025    # 2.5 % ATR/price
+
+# ---------------------------------------------------------------------------
+# Risk management — legacy dollar caps (used as a floor safety net only)
+# ---------------------------------------------------------------------------
+MAX_TRADES_PER_DAY: int = 5          # hard cap on entries per day
+MAX_RISK_PER_TRADE: float = 1.00     # USD minimum risk floor (overridden by pct-based sizing)
+MAX_DAILY_LOSS: float = 2.00         # USD minimum floor (overridden by pct-based sizing)
+
+MIN_POSITION_SIZE: float = 10.00     # USD notional minimum
+MAX_POSITION_SIZE: float = 100.00    # USD notional maximum
 
 # Percentage of total portfolio value the bot is allowed to deploy.
-# 0.75 = 75% trading capital, 25% kept as reserve cash.
-MAX_ACCOUNT_USAGE_PCT: float = 0.75
+# 1.0 = use all available buying power (spot only, no leverage).
+MAX_ACCOUNT_USAGE_PCT: float = 1.00
 
 # ---------------------------------------------------------------------------
 # Reward / risk targets
@@ -70,11 +90,34 @@ MAX_SPREAD_PCT: float = 0.50            # 0.5 %
 PULLBACK_LOW_BARS: int = 3
 
 # ---------------------------------------------------------------------------
+# Signal: use only closed (completed) candles for entry decisions
+# ---------------------------------------------------------------------------
+# True  → evaluate signals on the second-to-last bar (candle fully closed)
+# False → evaluate on the current forming bar (repaint risk)
+USE_CLOSED_CANDLE: bool = True
+
+# ---------------------------------------------------------------------------
+# Execution quality filters
+# ---------------------------------------------------------------------------
+# Maximum estimated entry slippage as fraction of entry price.
+MAX_SLIPPAGE_PCT: float = 0.002       # 0.2 %
+
+# Minimum 20-bar average volume (in USD notional) for a symbol to be tradable.
+MIN_LIQUIDITY_VOLUME_USD: float = 500.0
+
+# ---------------------------------------------------------------------------
+# Short-side trading
+# ---------------------------------------------------------------------------
+# True  → bot can also enter short positions in downtrend / mean-reversion regimes.
+# Alpaca crypto supports sell-to-short when the account has no existing position.
+ENABLE_SHORT_SELLING: bool = False    # set True when account is margin-enabled for crypto
+
+# ---------------------------------------------------------------------------
 # Bar / data settings
 # ---------------------------------------------------------------------------
 # Supported values: "1Min", "5Min", "15Min", "1Hour", "1Day"
 BAR_TIMEFRAME: str = "15Min"
-BARS_LOOKBACK: int = 100             # bars fetched per symbol per cycle
+BARS_LOOKBACK: int = 100             # bars fetched per symbol per cycle  (kept for backward compat)
 
 # ---------------------------------------------------------------------------
 # Order type preference
