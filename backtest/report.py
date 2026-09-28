@@ -147,7 +147,7 @@ def save_trades_csv(trades: list[BacktestTrade], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
         "symbol", "side", "entry_time", "exit_time",
-        "entry", "stop", "target", "qty",
+        "entry", "stop", "target1", "target", "qty",
         "exit_price", "exit_reason", "pnl_usd", "r_multiple",
         "regime", "risk_profile", "equity_after",
     ]
@@ -163,6 +163,7 @@ def save_trades_csv(trades: list[BacktestTrade], path: Path) -> None:
                 "exit_time":    t.exit_time,
                 "entry":        round(t.entry, 8),
                 "stop":         round(t.stop, 8),
+                "target1":      round(t.target1, 8) if t.target1 is not None else "",
                 "target":       round(t.target, 8),
                 "qty":          round(t.qty, 8),
                 "exit_price":   round(t.exit_price, 8) if t.exit_price is not None else "",

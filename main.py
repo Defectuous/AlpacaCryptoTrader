@@ -1,7 +1,7 @@
 """
 AlpacaCryptoTrader — main entry point.
 
-VWAP Pullback Strategy for BTC, ETH, SOL
+Breakout rotation across the configured allowlist by default.
 Paper trading by default (set ALPACA_PAPER=false in .env to go live).
 
 Run:
@@ -12,8 +12,8 @@ from __future__ import annotations
 import signal
 import sys
 import time
-from datetime import datetime, timezone
 
+import pandas as pd
 from loguru import logger
 
 import config
@@ -37,6 +37,7 @@ from trader.telegram_notifier import (
 from trader.journal import (
     ensure_journal,
     get_open_trade_symbols,
+    get_open_trade_order_id,
     get_today_stats,
     log_trade,
     update_trade,
@@ -48,8 +49,17 @@ from trader.order_manager import (
     get_open_positions,
     place_order,
 )
-from trader.risk_manager import check_daily_limits, validate_setup, select_risk_profile, update_hwm
+from trader.risk_manager import (
+    HIGH_RISK_PROFILE,
+    STANDARD_PROFILE,
+    check_daily_limits,
+    validate_setup,
+    select_risk_profile,
+    update_hwm,
+)
+from trader.indicators import calculate_rsi, identify_four_hour_trend
 from trader.strategy import detect_signal
+from trader.streaming import LiveStreamRunner
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -110,14 +120,23 @@ def sync_open_positions_to_journal() -> None:
 
         client = get_trading_client()
         closed_orders = client.get_orders(
-            GetOrdersRequest(status=QueryOrderStatus.CLOSED, limit=500)
+            GetOrdersRequest(status=QueryOrderStatus.CLOSED, limit=500, nested=True)
         )
 
-        for order in closed_orders:
+        orders_to_sync = []
+        for parent_order in closed_orders:
+            orders_to_sync.append((parent_order, None))
+            orders_to_sync.extend(
+                (leg, str(parent_order.id))
+                for leg in (getattr(parent_order, "legs", None) or [])
+            )
+
+        for order, parent_order_id in orders_to_sync:
             order_id = str(order.id)
             status   = str(order.status).lower()
             side     = str(getattr(order, "side", "")).upper()
             symbol   = str(getattr(order, "symbol", ""))
+            journal_order_id = str(parent_order_id) if parent_order_id else order_id
 
             filled_price: float | None = None
             filled_qty = float(getattr(order, "filled_qty", 0) or 0)
@@ -129,8 +148,29 @@ def sync_open_positions_to_journal() -> None:
                     f"qty={filled_qty:.8f} price={filled_price:.8f} order_id={order_id}"
                 )
 
-            # update_trade computes PnL from entry_price/qty when exit_price is supplied
-            update_trade(order_id, status, filled_price)
+            # Entry fills are not realized exits; child fills link P&L to the parent row.
+            if parent_order_id:
+                update_trade(
+                    journal_order_id,
+                    status,
+                    filled_price,
+                    exit_order_id=order_id,
+                    symbol=symbol,
+                )
+            elif status == "filled":
+                entry_order_id = get_open_trade_order_id(symbol)
+                if entry_order_id and entry_order_id != order_id:
+                    update_trade(
+                        entry_order_id,
+                        status,
+                        filled_price,
+                        exit_order_id=order_id,
+                        symbol=symbol,
+                    )
+                else:
+                    update_trade(journal_order_id, status)
+            else:
+                update_trade(journal_order_id, status)
 
             # Notify once per filled order (covers both BUY and SELL fills).
             if status == "filled" and (
@@ -165,14 +205,235 @@ def log_position_summary() -> None:
         )
 
 
+def _handle_stream_bar(
+    symbol: str,
+    bars: pd.DataFrame,
+    quote: dict[str, float],
+    snapshot: dict[str, tuple[pd.DataFrame, dict[str, float]]],
+) -> None:
+    """Evaluate one completed streamed strategy bar."""
+    try:
+        if config.STRATEGY_MODE == "breakout_rotation":
+            run_scan_cycle(snapshot)
+        else:
+            run_scan_cycle({symbol: (bars, quote)})
+    except Exception as exc:
+        logger.error(f"Stream scan error for {symbol}: {exc}", exc_info=True)
+
+
+def _handle_stream_trade_update(update) -> None:
+    """Reconcile the journal when Alpaca publishes an order update."""
+    logger.info(
+        f"Trade update: {getattr(update, 'event', 'unknown')} "
+        f"order_id={getattr(update, 'order', update)}"
+    )
+    sync_open_positions_to_journal()
+
+
+def _run_trend_flip_exits(
+    streamed_data: dict[str, tuple[pd.DataFrame, dict[str, float]]] | None,
+    live_positions: dict[str, dict],
+) -> None:
+    """Close trend-mode positions when their completed 4-hour regime changes."""
+    for symbol in config.SYMBOLS:
+        position_symbol = next(
+            (key for key in live_positions if key.replace("/", "") == symbol.replace("/", "")),
+            None,
+        )
+        pending_entries = get_open_orders(symbol) if position_symbol is None else []
+        if position_symbol is None and not pending_entries:
+            continue
+
+        if streamed_data is None:
+            bars = get_bars(symbol)
+            evaluation_bars = bars.iloc[:-1] if len(bars) else bars
+        else:
+            pair = streamed_data.get(symbol)
+            if pair is None:
+                continue
+            evaluation_bars = pair[0]
+
+        if len(evaluation_bars) < config.TREND_HTF_EMA_SLOW * 4:
+            logger.warning(f"{symbol}: Insufficient history to evaluate 4-hour trend exit")
+            continue
+
+        trend = identify_four_hour_trend(evaluation_bars)
+        client = get_trading_client()
+        if position_symbol is not None:
+            position = live_positions[position_symbol]
+            side_value = str(position.get("side", "long")).lower()
+            side = "short" if side_value.endswith("short") else "long"
+            expected_trend = "downtrend" if side == "short" else "uptrend"
+            if trend != expected_trend:
+                logger.warning(
+                    f"{symbol}: 4-hour trend changed from {expected_trend} to {trend}; "
+                    "canceling attached exits and closing position"
+                )
+                for order in get_open_orders(position_symbol, nested=True):
+                    try:
+                        client.cancel_order_by_id(order.id)
+                    except Exception as exc:
+                        logger.error(f"{symbol}: Could not cancel open exit order {order.id}: {exc}")
+                        break
+                else:
+                    try:
+                        order = client.close_position(position_symbol)
+                        logger.success(
+                            f"{symbol}: Trend-flip close submitted — id={order.id} "
+                            f"old-side={side} new-trend={trend}"
+                        )
+                    except Exception as exc:
+                        logger.error(f"{symbol}: Trend-flip close failed — {exc}")
+
+        if pending_entries:
+            momentum = float(calculate_rsi(evaluation_bars["close"], config.RSI_PERIOD).iloc[-1])
+            for order in pending_entries:
+                side = "short" if str(order.side).lower() == "sell" else "long"
+                expected_trend = "downtrend" if side == "short" else "uptrend"
+                momentum_aligned = (
+                    momentum <= config.TREND_MOMENTUM_RSI_SHORT
+                    if side == "short"
+                    else momentum >= config.TREND_MOMENTUM_RSI_LONG
+                )
+                if trend == expected_trend and momentum_aligned:
+                    continue
+                try:
+                    client.cancel_order_by_id(order.id)
+                    logger.info(
+                        f"{symbol}: Canceled pending {side} entry; "
+                        f"4h trend={trend}, hourly RSI={momentum:.1f}"
+                    )
+                except Exception as exc:
+                    logger.error(f"{symbol}: Could not cancel stale entry {order.id}: {exc}")
+
+
 # ---------------------------------------------------------------------------
 # Main scan cycle
 # ---------------------------------------------------------------------------
 
-def run_scan_cycle() -> None:
+def _run_breakout_rotation_cycle(
+    streamed_data: dict[str, tuple[pd.DataFrame, dict[str, float]]] | None,
+    live_positions: dict[str, dict],
+    open_symbols: list[str],
+) -> None:
+    """Enter only the strongest fresh breakout while otherwise remaining in cash."""
+    if live_positions:
+        logger.info("Breakout rotation: position remains open; waiting for its full exit")
+        return
+
+    if get_open_orders():
+        logger.info("Breakout rotation: entry/exit orders are still open; waiting")
+        return
+
+    data: dict[str, tuple[pd.DataFrame, dict[str, float]]] = {}
+    for symbol in config.SYMBOLS:
+        if symbol in open_symbols:
+            continue
+        if streamed_data is not None:
+            pair = streamed_data.get(symbol)
+            if pair is None:
+                continue
+            bars, quote = pair
+        else:
+            bars = get_bars(symbol)
+            quote = get_latest_quote(symbol)
+        if bars is None or bars.empty or quote.get("ask", 0) <= 0 or quote.get("bid", 0) <= 0:
+            continue
+        data[symbol] = (bars, quote)
+
+    if not data:
+        logger.info("Breakout rotation: no fresh market data; staying in cash")
+        return
+
+    def utc_timestamp(value) -> pd.Timestamp:
+        timestamp = pd.Timestamp(value)
+        return timestamp.tz_localize("UTC") if timestamp.tzinfo is None else timestamp.tz_convert("UTC")
+
+    newest_bar = max(utc_timestamp(frame.index[-1]) for frame, _ in data.values())
+    timeframe_minutes = {
+        "1Min": 1,
+        "5Min": 5,
+        "15Min": 15,
+        "1Hour": 60,
+        "1Day": 1440,
+    }.get(config.BAR_TIMEFRAME, 1)
+
+    candidates = []
+    for symbol, (bars, quote) in data.items():
+        bar_time = utc_timestamp(bars.index[-1])
+        if newest_bar - bar_time > pd.Timedelta(minutes=timeframe_minutes):
+            logger.debug(f"{symbol}: Cached breakout data is stale; skipping")
+            continue
+        signal = detect_signal(
+            df=bars,
+            symbol=symbol,
+            ask_price=quote["ask"],
+            bid_price=quote["bid"],
+            spread_pct=quote.get("spread_pct", 999.0),
+            use_closed_candle=streamed_data is None,
+        )
+        if signal is None:
+            continue
+        ok, msg = validate_setup(signal.entry, signal.stop, signal.target, side=signal.side)
+        if not ok:
+            logger.warning(f"{symbol}: Breakout failed risk validation — {msg}")
+            continue
+        candidates.append((signal, msg))
+
+    if not candidates:
+        logger.info("Breakout rotation: no clean breakout; staying in cash")
+        return
+
+    signal, validation = max(candidates, key=lambda candidate: candidate[0].breakout_score)
+    profile = (
+        HIGH_RISK_PROFILE
+        if signal.risk_profile == "higher-risk"
+        else STANDARD_PROFILE
+    )
+    logger.info(
+        f"Strongest breakout ▶ {signal.symbol} score={signal.breakout_score:.4f} "
+        f"[{signal.risk_profile}] {validation}"
+    )
+    logger.info(
+        f"  Entry={signal.entry:.8f} Stop={signal.stop:.8f} "
+        f"TP1={signal.target1:.8f} TP2={signal.target:.8f}"
+    )
+    logger.info(f"  Rationale: {signal.reason}")
+    logger.info(
+        f"  Guardrails: risk={profile.risk_pct_per_trade:.2%}, "
+        f"daily-loss={profile.max_daily_loss_pct:.2%}, "
+        f"drawdown-pause={profile.max_drawdown_pct:.2%}, "
+        f"max-open={profile.max_open_positions}"
+    )
+    order_info = place_order(signal, profile)
+    if not order_info:
+        logger.error(f"Breakout rotation: entry failed for {signal.symbol}; staying in cash")
+        return
+
+    legs = order_info.get("legs") or [order_info]
+    for leg in legs:
+        log_trade(leg)
+    if len(legs) == 2:
+        logger.success(
+            f"Breakout entry submitted for {signal.symbol} | "
+            f"score={signal.breakout_score:.4f} | two protected exit legs"
+        )
+    else:
+        logger.warning(
+            f"Breakout entry for {signal.symbol} accepted with one protected leg only; "
+            "check the order before allowing another entry"
+        )
+    post_trade_line = _build_account_line()
+    discord_send_buy_submitted(order_info, post_trade_line)
+    telegram_send_buy_submitted(order_info, post_trade_line)
+
+
+def run_scan_cycle(
+    streamed_data: dict[str, tuple[pd.DataFrame, dict[str, float]]] | None = None,
+) -> None:
     """
-    Scan all configured symbols for a VWAP pullback/rejection setup and place
-    orders when conditions are met and daily limits allow.
+    Scan configured symbols for the active strategy and place orders when
+    conditions are met and daily limits allow.
     """
     stats        = get_today_stats()
     trades_today = stats["trades_today"]
@@ -190,10 +451,6 @@ def run_scan_cycle() -> None:
     can_trade, limit_reason = check_daily_limits(
         trades_today, daily_pnl, portfolio_value, STANDARD_PROFILE
     )
-    if not can_trade:
-        logger.info(f"Trading paused: {limit_reason}")
-        return
-
     live_positions = get_open_positions()
     open_symbols   = get_open_trade_symbols()
 
@@ -205,7 +462,24 @@ def run_scan_cycle() -> None:
         logger.warning(f"Account status is '{account['status']}' — halting scan")
         return
 
-    for symbol in config.SYMBOLS:
+    if config.STRATEGY_MODE == "4h_trend_momentum":
+        _run_trend_flip_exits(streamed_data, live_positions)
+        live_positions = get_open_positions()
+
+    if not can_trade:
+        logger.info(f"Trading paused: {limit_reason}")
+        return
+
+    if config.STRATEGY_MODE == "breakout_rotation":
+        _run_breakout_rotation_cycle(
+            streamed_data,
+            live_positions,
+            open_symbols,
+        )
+        return
+
+    symbols = list(streamed_data) if streamed_data is not None else config.SYMBOLS
+    for symbol in symbols:
         if not _running:
             break
 
@@ -222,12 +496,16 @@ def run_scan_cycle() -> None:
         logger.debug(f"Scanning {symbol}…")
 
         # ---- Data ----
-        bars = get_bars(symbol)
+        if streamed_data is None:
+            bars = get_bars(symbol)
+            quote = get_latest_quote(symbol)
+        else:
+            bars, quote = streamed_data[symbol]
+
         if bars.empty:
             logger.debug(f"{symbol}: No bar data — skipping")
             continue
 
-        quote = get_latest_quote(symbol)
         if quote["ask"] <= 0:
             logger.warning(f"{symbol}: Invalid quote — skipping")
             continue
@@ -239,6 +517,7 @@ def run_scan_cycle() -> None:
             ask_price=quote["ask"],
             bid_price=quote["bid"],
             spread_pct=quote["spread_pct"],
+            use_closed_candle=streamed_data is None,
         )
 
         if signal is None:
@@ -253,12 +532,24 @@ def run_scan_cycle() -> None:
         logger.info(f"Valid {signal.side.upper()} setup ▶ {symbol} {msg} [{signal.risk_profile}]")
         logger.info(f"  Entry : {signal.entry:.6f}")
         logger.info(f"  Stop  : {signal.stop:.6f}")
-        logger.info(f"  Target: {signal.target:.6f}")
+        if signal.exit_on_trend_flip:
+            logger.info(f"  Projected target (risk validation only): {signal.target:.6f}")
+            logger.info("  Exit   : protective stop or 4-hour trend flip")
+        else:
+            logger.info(f"  Target: {signal.target:.6f}")
         logger.info(f"  Reason: {signal.reason}")
 
         # Resolve profile object for order sizing
         from trader.risk_manager import HIGH_RISK_PROFILE
         profile = HIGH_RISK_PROFILE if signal.risk_profile == "higher-risk" else STANDARD_PROFILE
+
+        if signal.exit_on_trend_flip:
+            logger.info(
+                f"  Guardrails [{profile.name}]: risk={profile.risk_pct_per_trade:.2%}, "
+                f"daily-loss={profile.max_daily_loss_pct:.2%}, "
+                f"drawdown-pause={profile.max_drawdown_pct:.2%}, "
+                f"max-open={profile.max_open_positions}"
+            )
 
         # Enforce max open positions for the resolved profile
         if len(live_positions) >= profile.max_open_positions:
@@ -277,9 +568,20 @@ def run_scan_cycle() -> None:
                 f"{side_label} submitted ✓ {symbol} | order_id={order_info['order_id']}"
             )
             logger.info(
-                f"Exits armed ▶ {symbol} | "
-                f"take_profit={order_info['target']:.6f} stop_loss={order_info['stop']:.6f}"
+                f"  Position size={order_info['qty']:.8f} | "
+                f"stop distance={abs(signal.entry - signal.stop):.8f} | "
+                f"projected target distance={abs(signal.target - signal.entry):.8f}"
             )
+            if signal.exit_on_trend_flip:
+                logger.info(
+                    f"Exits armed ▶ {symbol} | stop_loss={order_info['stop']:.6f} "
+                    "trend_flip=4h"
+                )
+            else:
+                logger.info(
+                    f"Exits armed ▶ {symbol} | "
+                    f"take_profit={order_info['target']:.6f} stop_loss={order_info['stop']:.6f}"
+                )
 
             post_trade_line = _build_account_line()
             discord_send_buy_submitted(order_info, post_trade_line)
@@ -320,7 +622,15 @@ def main() -> None:
     logger.info(f"  R:R target      : {config.REWARD_RISK_MIN} – {config.REWARD_RISK_TARGET}")
     logger.info(f"  Bar timeframe   : {config.BAR_TIMEFRAME}")
     logger.info(f"  Closed candle   : {config.USE_CLOSED_CANDLE}")
-    logger.info(f"  Poll interval   : {config.POLL_INTERVAL_SECONDS}s")
+    logger.info("  Runtime         : Alpaca WebSocket streaming")
+    logger.info(f"  Strategy mode   : {config.STRATEGY_MODE}")
+    if config.STRATEGY_MODE == "breakout_rotation":
+        logger.info(
+            f"  Breakout exits  : {config.BREAKOUT_TP1_R:.2f}R half / "
+            f"{config.BREAKOUT_TP2_R:.2f}R remainder"
+        )
+    else:
+        logger.info(f"  R:R target      : {config.REWARD_RISK_MIN} – {config.REWARD_RISK_TARGET}")
     logger.info("=" * 60)
 
     ensure_journal()
@@ -337,32 +647,27 @@ def main() -> None:
         logger.error("Check ALPACA_API_KEY and ALPACA_SECRET_KEY in your .env file.")
         sys.exit(1)
 
-    # -----------------------------------------------------------------------
-    # Main loop
-    # -----------------------------------------------------------------------
-    while _running:
-        now = datetime.now(timezone.utc)
-        logger.info(f"──── Cycle {now.strftime('%Y-%m-%d %H:%M:%S')} UTC ────")
+    sync_open_positions_to_journal()
+    log_position_summary()
 
-        try:
-            sync_open_positions_to_journal()
-            log_position_summary()
-            run_scan_cycle()
-        except Exception as exc:
-            logger.error(f"Unhandled error in main loop: {exc}", exc_info=True)
+    runner = LiveStreamRunner(
+        config.SYMBOLS,
+        on_bar_close=_handle_stream_bar,
+        on_trade_update=_handle_stream_trade_update,
+    )
 
-        if _running:
-            logger.debug(f"Sleeping {config.POLL_INTERVAL_SECONDS}s…")
-            # Sleep in short chunks so Ctrl+C is responsive
-            for _ in range(config.POLL_INTERVAL_SECONDS):
-                if not _running:
-                    break
-                time.sleep(1)
-
-    # Cleanup on exit
-    logger.info("Cancelling any open buy orders before exit…")
-    cancel_open_buy_orders()
-    logger.info("AlpacaCryptoTrader stopped.")
+    try:
+        runner.start()
+        logger.info("Waiting for streamed bars; scans run at completed bar boundaries.")
+        while _running:
+            time.sleep(1)
+    except Exception as exc:
+        logger.error(f"Streaming runtime stopped unexpectedly: {exc}", exc_info=True)
+    finally:
+        runner.stop()
+        logger.info("Cancelling any open entry orders before exit…")
+        cancel_open_buy_orders()
+        logger.info("AlpacaCryptoTrader stopped.")
 
 
 if __name__ == "__main__":

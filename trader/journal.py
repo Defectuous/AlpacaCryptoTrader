@@ -27,6 +27,7 @@ COLUMNS = [
     "time_utc",
     "symbol",
     "order_id",
+    "entry_group_id",
     "exit_order_id",
     "side",
     "entry_price",
@@ -106,6 +107,7 @@ def log_trade(order_info: dict) -> None:
         "time_utc":      now.strftime("%H:%M:%S"),
         "symbol":        order_info.get("symbol", ""),
         "order_id":      order_info.get("order_id", ""),
+        "entry_group_id": order_info.get("entry_group_id", ""),
         "exit_order_id": "",
         "side":          order_info.get("side", "BUY"),
         "entry_price":   round(entry,  8),
@@ -139,6 +141,7 @@ def update_trade(
     exit_price: float | None = None,
     pnl_usd: float | None = None,
     exit_order_id: str | None = None,
+    symbol: str | None = None,
 ) -> None:
     """Update status, exit price, and P&L for a previously logged trade.
 
@@ -153,6 +156,14 @@ def update_trade(
         # Also match by exit_order_id so exit fills update the right row
         if not mask.any() and exit_order_id:
             mask = df["exit_order_id"] == exit_order_id
+
+        if not mask.any() and symbol and exit_price is not None:
+            open_statuses = {"new", "pending", "accepted", "partially_filled", "held", "filled"}
+            mask = (
+                (df["symbol"] == symbol)
+                & df["status"].str.lower().isin(open_statuses)
+                & (df["exit_price"].fillna("") == "")
+            )
 
         if not mask.any():
             return
@@ -206,7 +217,13 @@ def get_today_stats() -> dict:
             return {"trades_today": 0, "daily_pnl": 0.0}
 
         today_df = _load_today(df)
-        trades_today = len(today_df)
+        if "entry_group_id" in today_df.columns:
+            groups = today_df["entry_group_id"].fillna("").astype(str)
+            grouped_trades = groups[groups != ""].nunique()
+            ungrouped_trades = int((groups == "").sum())
+            trades_today = grouped_trades + ungrouped_trades
+        else:
+            trades_today = len(today_df)
 
         closed = today_df[
             today_df["pnl_usd"].notna() & (today_df["pnl_usd"] != "")
@@ -234,7 +251,29 @@ def get_open_trade_symbols() -> list[str]:
             return []
         today_df = _load_today(df)
         open_today = today_df[today_df["status"].str.lower().isin(open_statuses)]
+        open_today = open_today[open_today["exit_price"].fillna("") == ""]
         return open_today["symbol"].unique().tolist()
     except Exception as exc:
         logger.error(f"Error querying open trades: {exc}")
         return []
+
+
+def get_open_trade_order_id(symbol: str) -> str | None:
+    """Return the latest unclosed journal order ID for a symbol."""
+    ensure_journal()
+    open_statuses = {"new", "pending", "accepted", "partially_filled", "held", "filled"}
+    try:
+        df = pd.read_csv(JOURNAL_FILE, dtype=str)
+        if df.empty:
+            return None
+        open_rows = df[
+            (df["symbol"] == symbol)
+            & df["status"].str.lower().isin(open_statuses)
+            & (df["exit_price"].fillna("") == "")
+        ]
+        if open_rows.empty:
+            return None
+        return str(open_rows.iloc[-1]["order_id"])
+    except Exception as exc:
+        logger.error(f"Error querying open trade for {symbol}: {exc}")
+        return None

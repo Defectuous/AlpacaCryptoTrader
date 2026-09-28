@@ -100,13 +100,28 @@ def send_buy_submitted(order_info: dict[str, Any], account_line: str) -> bool:
     label = "SHORT ORDER SUBMITTED" if side == "SHORT" else "LONG ORDER SUBMITTED"
     regime = order_info.get("regime", "")
     risk_profile = order_info.get("risk_profile", "")
+    legs = order_info.get("legs", [])
+    target_text = (
+        f"TP1 (half): {float(legs[0]['target']):.8f}\n"
+        f"TP2 (rest): {float(legs[1]['target']):.8f}\n"
+        if len(legs) == 2
+        else (
+            f"Projected target (sizing only): {float(order_info.get('target', 0)):.8f}\n"
+            f"Exit: 4-hour trend flip\n"
+            if order_info.get("exit_on_trend_flip")
+            else
+            f"Only accepted target: {float(legs[0]['target']):.8f}\n"
+            if legs
+            else f"Target: {float(order_info.get('target', 0)):.8f}\n"
+        )
+    )
     message = (
         f"{label}\n"
         f"Symbol: {order_info.get('symbol', '')}\n"
         f"Qty: {float(order_info.get('qty', 0)):.8f}\n"
         f"Entry: {float(order_info.get('entry', 0)):.8f}\n"
         f"Stop: {float(order_info.get('stop', 0)):.8f}\n"
-        f"Target: {float(order_info.get('target', 0)):.8f}\n"
+        f"{target_text}"
         f"R:R: {float(order_info.get('rr', 0)):.2f}\n"
         f"Regime: {regime} | Profile: {risk_profile}\n"
         f"Reason: {order_info.get('reason', '')}\n"
@@ -118,11 +133,16 @@ def send_buy_submitted(order_info: dict[str, Any], account_line: str) -> bool:
 def send_sell_submitted(order_info: dict[str, Any], account_line: str) -> bool:
     side = str(order_info.get("side", "LONG")).upper()
     exit_label = "BUY-COVER" if side == "SHORT" else "SELL"
+    exit_text = (
+        "Exit on 4-hour trend flip"
+        if order_info.get("exit_on_trend_flip")
+        else f"Take-profit: {float(order_info.get('target', 0)):.8f}"
+    )
     message = (
         f"{exit_label} EXIT ORDERS ARMED\n"
         f"Symbol: {order_info.get('symbol', '')}\n"
         f"Qty: {float(order_info.get('qty', 0)):.8f}\n"
-        f"Take-profit: {float(order_info.get('target', 0)):.8f}\n"
+        f"{exit_text}\n"
         f"Stop-loss: {float(order_info.get('stop', 0)):.8f}\n"
         f"Linked order: {order_info.get('order_id', '')}\n"
         f"{account_line}"
@@ -193,14 +213,23 @@ def _send_message(message: str) -> bool:
 
 
 def send_buy_submitted(order_info: dict[str, Any], account_line: str) -> bool:
+    side = str(order_info.get("side", "LONG")).upper()
+    label = "SHORT ORDER SUBMITTED" if side == "SHORT" else "LONG ORDER SUBMITTED"
+    target_text = (
+        f"Projected target (sizing only): {float(order_info.get('target', 0)):.8f}\n"
+        "Exit: 4-hour trend flip\n"
+        if order_info.get("exit_on_trend_flip")
+        else f"Target: {float(order_info.get('target', 0)):.8f}\n"
+    )
     message = (
-        "BUY ORDER SUBMITTED\n"
+        f"{label}\n"
         f"Symbol: {order_info.get('symbol', '')}\n"
         f"Qty: {float(order_info.get('qty', 0)):.8f}\n"
         f"Entry: {float(order_info.get('entry', 0)):.8f}\n"
         f"Stop: {float(order_info.get('stop', 0)):.8f}\n"
-        f"Target: {float(order_info.get('target', 0)):.8f}\n"
+        f"{target_text}"
         f"R:R: {float(order_info.get('rr', 0)):.2f}\n"
+        f"Regime: {order_info.get('regime', '')} | Profile: {order_info.get('risk_profile', '')}\n"
         f"Reason: {order_info.get('reason', '')}\n"
         f"{account_line}"
     )
@@ -208,13 +237,20 @@ def send_buy_submitted(order_info: dict[str, Any], account_line: str) -> bool:
 
 
 def send_sell_submitted(order_info: dict[str, Any], account_line: str) -> bool:
+    side = str(order_info.get("side", "LONG")).upper()
+    exit_label = "BUY-COVER" if side == "SHORT" else "SELL"
+    exit_text = (
+        "Exit on 4-hour trend flip"
+        if order_info.get("exit_on_trend_flip")
+        else f"Take-profit: {float(order_info.get('target', 0)):.8f}"
+    )
     message = (
-        "SELL EXIT ORDERS ARMED\n"
+        f"{exit_label} EXIT ORDERS ARMED\n"
         f"Symbol: {order_info.get('symbol', '')}\n"
         f"Qty: {float(order_info.get('qty', 0)):.8f}\n"
-        f"Take-profit: {float(order_info.get('target', 0)):.8f}\n"
+        f"{exit_text}\n"
         f"Stop-loss: {float(order_info.get('stop', 0)):.8f}\n"
-        f"Linked BUY order: {order_info.get('order_id', '')}\n"
+        f"Linked order: {order_info.get('order_id', '')}\n"
         f"{account_line}"
     )
     return _send_message(message)
