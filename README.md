@@ -19,16 +19,22 @@ AlpacaCryptoTrader/
 ├── config.py               ← all tunable settings
 ├── requirements.txt
 ├── .env.example            ← copy to .env and fill in your keys
+├── brokers/                ← one adapter per exchange (see "Brokers" below)
+│   ├── base.py             ← exchange-neutral Broker interface + data types
+│   ├── alpaca.py           ← Alpaca (paper/live, long only, managed stops)
+│   ├── alpaca_stream.py    ← Alpaca WebSocket bars/quotes/order updates
+│   ├── coinbase.py         ← Coinbase (market data now; trading to finish)
+│   └── polling_stream.py   ← REST polling runner for brokers without WebSockets
 ├── data/
-│   └── market_data.py      ← Alpaca bar + quote fetching
+│   └── market_data.py      ← bar + quote fetching via the active broker
+├── deploy/                 ← systemd service + install/uninstall scripts
 ├── trader/
-│   ├── alpaca_client.py    ← API client singleton
 │   ├── discord_notifier.py ← Discord webhook alerts
 │   ├── telegram_notifier.py← Telegram bot alerts
 │   ├── indicators.py       ← VWAP, EMA9/20, ATR, volume
 │   ├── strategy.py         ← signal detection (VWAP pullback)
 │   ├── risk_manager.py     ← position sizing, R:R validation, daily limits
-│   ├── order_manager.py    ← bracket order placement (limit + TP + SL)
+│   ├── order_manager.py    ← risk-sized entries with protective exits
 │   └── journal.py          ← CSV trade journal in logs/
 └── logs/
     ├── trade_journal.csv   ← auto-created on first trade
@@ -142,9 +148,9 @@ Invalidation     → Stop beyond the recent 12-hour swing, buffered by 0.15%
 Exit             → Close when completed 4-hour trend changes, or when the protective stop is hit
 ```
 
-Short entries require short-selling permission and support from the connected
-Alpaca account. Verify both in paper trading before enabling live trading. The
-VWAP pullback, breakout, and Bollinger/Stochastic scalp modes remain available
+Short entries need `ENABLE_SHORT_SELLING=true` in `.env` **and** a broker that
+can short. Alpaca crypto cannot, so on Alpaca the bot runs long-only and simply
+stays in cash during downtrends. The VWAP pullback, breakout, and Bollinger/Stochastic scalp modes remain available
 by setting `STRATEGY_MODE` in `.env`.
 
 ### The trade in one sentence
@@ -184,13 +190,43 @@ by setting `STRATEGY_MODE` in `.env`.
 | `VWAP_PULLBACK_THRESHOLD` | `0.005` | Max distance from VWAP to qualify (0.5%) |
 | `VOLUME_MULTIPLIER` | `1.2` | Bounce bar volume vs average volume |
 | `MAX_SPREAD_PCT` | `0.5` | Skip symbol if spread exceeds this % |
-| `ALPACA_PAPER` | `true` | Paper trading mode |
+| `ALPACA_PAPER` | `true` | Paper trading mode (`.env`) |
+| `BROKER` | `alpaca` | Exchange adapter: `alpaca` or `coinbase` (`.env`) |
+| `ENABLE_SHORT_SELLING` | `false` | Take short entries when the broker supports them (`.env`) |
+| `COINBASE_MARKET` | `spot` | Coinbase: `spot` (long only) or `futures` (long + short) (`.env`) |
 
 Notification settings are configured from `.env`:
 
 - `DISCORD_WEBHOOK_URL`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
+
+---
+
+## Brokers
+
+All exchange access goes through the `Broker` interface in
+[brokers/base.py](brokers/base.py). Strategy, risk, journal and notifier code
+never touch an exchange SDK, so adding an exchange means adding one adapter.
+Pick the adapter with `BROKER` in `.env`.
+
+| Broker | Paper trading | Live | Long | Short | Status |
+|---|---|---|---|---|---|
+| `alpaca` | ✅ free | ✅ | ✅ | ❌ (Alpaca crypto can't short) | Working |
+| `coinbase` | ❌ (no real sandbox) | planned | ✅ | ✅ with `COINBASE_MARKET=futures` | Market data only |
+
+**Alpaca protective stops.** Alpaca rejects bracket/OTO orders for crypto, so
+the adapter places the entry as a plain order and then keeps a stop-limit exit
+on the filled position (`ensure_protection()`), re-checking it after every
+order update and every scan. The stop and target are stored in the entry's
+`client_order_id`, so this survives restarts without any local state.
+
+**Coinbase.** Candles and quotes come from Coinbase's public API (no account
+needed) and are polled at each bar close. With `COINBASE_MARKET=futures`,
+orders are routed to the US perpetual-style futures (`BIP-20DEC30-CDE` for BTC,
+`ETP-20DEC30-CDE` for ETH), which allow shorts. Trading and account methods
+are stubs; the bot refuses to start on Coinbase until they are implemented.
+The steps are in the docstring of [brokers/coinbase.py](brokers/coinbase.py).
 
 ---
 
@@ -251,10 +287,9 @@ sudo systemctl stop alpacacryptotrader       # stop (cancels open entry orders)
 
 How the service behaves:
 
-- **Restarts automatically** 30 s after a crash, or if a WebSocket stream dies.
-  If it fails 5 times within 10 minutes (e.g. bad API keys) systemd stops
-  retrying; fix the cause, then `sudo systemctl reset-failed alpacacryptotrader`
-  and start it again.
+- **Restarts automatically** after a crash or if a market-data stream dies. It
+  never gives up: the delay starts at 30 s and backs off to 10 minutes, so an
+  internet or exchange outage (or bad API keys) retries quietly until fixed.
 - **Stops cleanly**: `systemctl stop` sends SIGTERM, the bot closes its streams
   and cancels open entry orders, with up to 60 s to finish.
 - **Waits for the network** at boot before starting.

@@ -1,8 +1,9 @@
 """
-Order placement and position monitoring.
+Order placement and position monitoring through the configured broker.
 
 Supports bracket orders (limit or market entry + automatic TP + SL).
-Supports both long and short entries (short only when ENABLE_SHORT_SELLING=True).
+Supports both long and short entries; shorts are refused unless
+ENABLE_SHORT_SELLING is on and the broker supports them.
 Falls back gracefully when the API rejects a request.
 """
 from __future__ import annotations
@@ -10,23 +11,11 @@ from __future__ import annotations
 from typing import Optional
 from uuid import uuid4
 
-from alpaca.trading.requests import (
-    LimitOrderRequest,
-    MarketOrderRequest,
-    TakeProfitRequest,
-    StopLossRequest,
-    GetOrdersRequest,
-)
-from alpaca.trading.enums import (
-    OrderSide,
-    TimeInForce,
-    OrderClass,
-    QueryOrderStatus,
-)
 from loguru import logger
 
 import config
-from trader.alpaca_client import get_trading_client
+from brokers import get_broker
+from brokers.base import Order, OrderRequest
 from trader.risk_manager import RiskProfile, calculate_position_qty
 from trader.strategy import TradeSignal
 
@@ -37,13 +26,7 @@ from trader.strategy import TradeSignal
 
 def get_account_info() -> dict:
     """Return key account fields as a plain dict."""
-    account = get_trading_client().get_account()
-    return {
-        "cash":            float(account.cash),
-        "portfolio_value": float(account.portfolio_value),
-        "buying_power":    float(account.buying_power),
-        "status":          str(account.status),
-    }
+    return get_broker().get_account().as_dict()
 
 
 def get_open_positions() -> dict[str, dict]:
@@ -51,32 +34,19 @@ def get_open_positions() -> dict[str, dict]:
     Return a dict keyed by symbol for all currently open positions.
 
     Example:
-        {"BTC/USD": {"qty": 0.001, "avg_entry": 60000.0, "unrealized_pl": 12.5}}
+        {"BTC/USD": {"qty": 0.001, "avg_entry": 60000.0, "unrealized_pl": 12.5, "side": "long"}}
     """
-    positions: dict[str, dict] = {}
     try:
-        for pos in get_trading_client().get_all_positions():
-            positions[pos.symbol] = {
-                "qty":           float(pos.qty),
-                "avg_entry":     float(pos.avg_entry_price),
-                "market_value":  float(pos.market_value),
-                "unrealized_pl": float(pos.unrealized_pl),
-                "side":          str(pos.side),
-            }
+        return {symbol: pos.as_dict() for symbol, pos in get_broker().get_positions().items()}
     except Exception as exc:
         logger.error(f"Error fetching positions: {exc}")
-    return positions
+        return {}
 
 
-def get_open_orders(symbol: str | None = None, nested: bool = False) -> list:
+def get_open_orders(symbol: str | None = None, nested: bool = False) -> list[Order]:
     """Return all open/pending orders, optionally filtered by symbol."""
     try:
-        request = GetOrdersRequest(
-            status=QueryOrderStatus.OPEN,
-            symbols=[symbol] if symbol else None,
-            nested=nested,
-        )
-        return get_trading_client().get_orders(request)
+        return get_broker().get_open_orders(symbol, nested=nested)
     except Exception as exc:
         logger.error(f"Error fetching open orders: {exc}")
         return []
@@ -90,7 +60,7 @@ def _check_buying_power(qty: float, entry: float, symbol: str, buying_power: flo
     """Return True if the account has enough available buying power for the trade.
 
     Pass *buying_power* to reuse an already-fetched value and avoid a second
-    API call.  If omitted it is fetched from Alpaca.
+    API call.  If omitted it is fetched from the broker.
     """
     notional = qty * entry
     bp = buying_power if buying_power is not None else get_account_info()["buying_power"]
@@ -106,7 +76,7 @@ def _check_buying_power(qty: float, entry: float, symbol: str, buying_power: flo
 
 
 def _has_open_position(symbol: str) -> bool:
-    """Return True if Alpaca already has an open position in this symbol."""
+    """Return True if the broker already has an open position in this symbol."""
     positions = get_open_positions()
     if symbol in positions:
         logger.debug(f"{symbol}: Live position already open — skipping")
@@ -125,12 +95,22 @@ def _result_dict(order, signal: TradeSignal, qty: float) -> dict:
         "target":       signal.target,
         "target1":      signal.target1,
         "rr":           signal.rr,
-        "status":       str(order.status),
+        "status":       order.status,
         "reason":       signal.reason,
         "regime":       signal.regime,
         "risk_profile": signal.risk_profile,
         "exit_on_trend_flip": signal.exit_on_trend_flip,
     }
+
+
+def _entry_side(signal: TradeSignal) -> str | None:
+    """Order side for the entry, or None when a short is not allowed."""
+    if signal.side != "short":
+        return "buy"
+    if not (config.ENABLE_SHORT_SELLING and get_broker().supports_short):
+        logger.warning(f"{signal.symbol}: Short entry refused — short selling unavailable on {config.BROKER}")
+        return None
+    return "sell"
 
 
 # ---------------------------------------------------------------------------
@@ -151,7 +131,9 @@ def place_limit_bracket_order(signal: TradeSignal, profile: RiskProfile) -> Opti
     if not _check_buying_power(qty, signal.entry, signal.symbol, account["buying_power"]):
         return None
 
-    order_side = OrderSide.SELL if signal.side == "short" else OrderSide.BUY
+    order_side = _entry_side(signal)
+    if order_side is None:
+        return None
     logger.info(
         f"Placing LIMIT bracket {signal.side.upper()} — {signal.symbol} "
         f"qty={qty:.8f} entry={signal.entry:.6f} "
@@ -160,16 +142,15 @@ def place_limit_bracket_order(signal: TradeSignal, profile: RiskProfile) -> Opti
     )
 
     try:
-        order = get_trading_client().submit_order(
-            LimitOrderRequest(
+        order = get_broker().submit_order(
+            OrderRequest(
                 symbol=signal.symbol,
-                qty=qty,
                 side=order_side,
-                time_in_force=TimeInForce.GTC,
-                limit_price=round(signal.entry, 8),
-                order_class=OrderClass.BRACKET,
-                take_profit=TakeProfitRequest(limit_price=round(signal.target, 8)),
-                stop_loss=StopLossRequest(stop_price=round(signal.stop, 8)),
+                qty=qty,
+                order_type="limit",
+                limit_price=signal.entry,
+                take_profit=signal.target,
+                stop_loss=signal.stop,
             )
         )
         logger.success(f"{signal.symbol}: Order submitted — id={order.id} status={order.status}")
@@ -193,7 +174,9 @@ def place_market_bracket_order(signal: TradeSignal, profile: RiskProfile) -> Opt
     if not _check_buying_power(qty, signal.entry, signal.symbol, account["buying_power"]):
         return None
 
-    order_side = OrderSide.SELL if signal.side == "short" else OrderSide.BUY
+    order_side = _entry_side(signal)
+    if order_side is None:
+        return None
     logger.info(
         f"Placing MARKET bracket {signal.side.upper()} — {signal.symbol} "
         f"qty={qty:.8f} stop={signal.stop:.6f} target={signal.target:.6f} "
@@ -201,15 +184,14 @@ def place_market_bracket_order(signal: TradeSignal, profile: RiskProfile) -> Opt
     )
 
     try:
-        order = get_trading_client().submit_order(
-            MarketOrderRequest(
+        order = get_broker().submit_order(
+            OrderRequest(
                 symbol=signal.symbol,
-                qty=qty,
                 side=order_side,
-                time_in_force=TimeInForce.GTC,
-                order_class=OrderClass.BRACKET,
-                take_profit=TakeProfitRequest(limit_price=round(signal.target, 8)),
-                stop_loss=StopLossRequest(stop_price=round(signal.stop, 8)),
+                qty=qty,
+                order_type="market",
+                take_profit=signal.target,
+                stop_loss=signal.stop,
             )
         )
         logger.success(f"{signal.symbol}: Market order submitted — id={order.id} status={order.status}")
@@ -234,21 +216,20 @@ def place_trend_order(signal: TradeSignal, profile: RiskProfile) -> Optional[dic
     if not _check_buying_power(qty, signal.entry, signal.symbol, account["buying_power"]):
         return None
 
-    order_side = OrderSide.SELL if signal.side == "short" else OrderSide.BUY
-    request_type = LimitOrderRequest if config.USE_LIMIT_ORDERS else MarketOrderRequest
-    order_args = {
-        "symbol": signal.symbol,
-        "qty": qty,
-        "side": order_side,
-        "time_in_force": TimeInForce.GTC,
-        "order_class": OrderClass.OTO,
-        "stop_loss": StopLossRequest(stop_price=round(signal.stop, 8)),
-    }
-    if config.USE_LIMIT_ORDERS:
-        order_args["limit_price"] = round(signal.entry, 8)
+    order_side = _entry_side(signal)
+    if order_side is None:
+        return None
+    order_request = OrderRequest(
+        symbol=signal.symbol,
+        side=order_side,
+        qty=qty,
+        order_type="limit" if config.USE_LIMIT_ORDERS else "market",
+        limit_price=signal.entry if config.USE_LIMIT_ORDERS else None,
+        stop_loss=signal.stop,
+    )
 
     try:
-        order = get_trading_client().submit_order(request_type(**order_args))
+        order = get_broker().submit_order(order_request)
         logger.success(
             f"{signal.symbol}: Trend-following {signal.side.upper()} order submitted "
             f"with stop={signal.stop:.8f}; exit target is the 4h trend flip"
@@ -261,35 +242,32 @@ def place_trend_order(signal: TradeSignal, profile: RiskProfile) -> Optional[dic
 
 def _submit_breakout_leg(signal: TradeSignal, qty: float, target: float):
     """Submit one independently protected breakout exit leg."""
-    client = get_trading_client()
-    order_side = OrderSide.BUY
+    broker = get_broker()
     if config.USE_LIMIT_ORDERS:
         try:
-            return client.submit_order(
-                LimitOrderRequest(
+            return broker.submit_order(
+                OrderRequest(
                     symbol=signal.symbol,
+                    side="buy",
                     qty=qty,
-                    side=order_side,
-                    time_in_force=TimeInForce.GTC,
-                    limit_price=round(signal.entry, 8),
-                    order_class=OrderClass.BRACKET,
-                    take_profit=TakeProfitRequest(limit_price=round(target, 8)),
-                    stop_loss=StopLossRequest(stop_price=round(signal.stop, 8)),
+                    order_type="limit",
+                    limit_price=signal.entry,
+                    take_profit=target,
+                    stop_loss=signal.stop,
                 )
             )
         except Exception as exc:
             logger.warning(f"{signal.symbol}: Breakout limit leg failed; trying market — {exc}")
 
     try:
-        return client.submit_order(
-            MarketOrderRequest(
+        return broker.submit_order(
+            OrderRequest(
                 symbol=signal.symbol,
+                side="buy",
                 qty=qty,
-                side=order_side,
-                time_in_force=TimeInForce.GTC,
-                order_class=OrderClass.BRACKET,
-                take_profit=TakeProfitRequest(limit_price=round(target, 8)),
-                stop_loss=StopLossRequest(stop_price=round(signal.stop, 8)),
+                order_type="market",
+                take_profit=target,
+                stop_loss=signal.stop,
             )
         )
     except Exception as exc:
@@ -381,10 +359,25 @@ def cancel_open_buy_orders(symbol: str | None = None) -> None:
 
     Nested protective exit orders are excluded so open positions remain protected.
     """
-    client = get_trading_client()
     for order in get_open_orders(symbol):
-        try:
-            client.cancel_order_by_id(order.id)
-            logger.info(f"Cancelled entry order {order.id} ({order.symbol}, {order.side})")
-        except Exception as exc:
-            logger.error(f"Could not cancel order {order.id}: {exc}")
+        cancel_order(order)
+
+
+def cancel_order(order: Order) -> bool:
+    """Cancel one order; return True on success."""
+    try:
+        get_broker().cancel_order(order.id)
+        logger.info(f"Cancelled order {order.id} ({order.symbol}, {order.side})")
+        return True
+    except Exception as exc:
+        logger.error(f"Could not cancel order {order.id}: {exc}")
+        return False
+
+
+def close_position(symbol: str) -> Order | None:
+    """Flatten the position in *symbol* at market."""
+    try:
+        return get_broker().close_position(symbol)
+    except Exception as exc:
+        logger.error(f"{symbol}: Close position failed — {exc}")
+        return None

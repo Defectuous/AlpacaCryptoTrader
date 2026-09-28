@@ -1,9 +1,8 @@
-"""Live Alpaca crypto market-data and trade-update streams."""
+"""Live Alpaca crypto market-data and trade-update streams (WebSocket)."""
 from __future__ import annotations
 
 import asyncio
 import threading
-from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any
 
@@ -13,6 +12,7 @@ from alpaca.trading.stream import TradingStream
 from loguru import logger
 
 import config
+from brokers.base import BarCloseCallback, StreamRunner, TradeUpdateCallback
 from data.market_data import get_bars
 
 
@@ -85,17 +85,14 @@ class _BarAggregator:
         return completed
 
 
-class LiveStreamRunner:
+class AlpacaStreamRunner(StreamRunner):
     """Run crypto market data and account updates in dedicated stream threads."""
 
     def __init__(
         self,
         symbols: list[str],
-        on_bar_close: Callable[
-            [str, pd.DataFrame, dict[str, float], dict[str, tuple[pd.DataFrame, dict[str, float]]]],
-            None,
-        ],
-        on_trade_update: Callable[[Any], None],
+        on_bar_close: BarCloseCallback,
+        on_trade_update: TradeUpdateCallback,
     ) -> None:
         minutes = _TIMEFRAME_MINUTES.get(config.BAR_TIMEFRAME)
         if minutes is None:

@@ -9,6 +9,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ---------------------------------------------------------------------------
+# Exchange selection (loaded from .env)
+# ---------------------------------------------------------------------------
+# "alpaca"   -> Alpaca crypto, paper or live. Long only.
+# "coinbase" -> Coinbase Advanced Trade. Market data only for now; see brokers/coinbase.py.
+BROKER: str = os.getenv("BROKER", "alpaca").strip().lower()
+
+# ---------------------------------------------------------------------------
 # Alpaca API credentials (loaded from .env)
 # ---------------------------------------------------------------------------
 ALPACA_API_KEY: str = os.getenv("ALPACA_API_KEY", "")
@@ -160,8 +167,10 @@ MAX_SLIPPAGE_PCT: float = 0.005       # 0.5 %
 # ---------------------------------------------------------------------------
 # Short-side trading
 # ---------------------------------------------------------------------------
-# True  → enable short entries; the account and Alpaca API must permit crypto shorts.
-ENABLE_SHORT_SELLING: bool = True     # required for the downtrend leg of this strategy
+# true → take short entries in downtrends. Only honoured when the broker
+# supports shorts (Alpaca crypto does not; Coinbase futures will). Otherwise the
+# bot logs a warning at startup and stays long-only.
+ENABLE_SHORT_SELLING: bool = os.getenv("ENABLE_SHORT_SELLING", "false").strip().lower() == "true"
 
 # ---------------------------------------------------------------------------
 # Bar / data settings

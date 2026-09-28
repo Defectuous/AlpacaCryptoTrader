@@ -5,9 +5,8 @@
 Description=AlpacaCryptoTrader
 After=network-online.target
 Wants=network-online.target
-# Stop retrying if it crash-loops (e.g. bad API keys): 5 failures within 10 minutes.
-StartLimitIntervalSec=600
-StartLimitBurst=5
+# Never give up: an internet or exchange outage must not leave the bot off.
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
@@ -17,8 +16,12 @@ ExecStart=__APP_DIR__/.venv/bin/python main.py
 Environment=PYTHONUNBUFFERED=1
 
 # Restart on crashes and on dead streams; `systemctl stop` does not trigger a restart.
+# Back off from 30 s to 10 min between attempts so a long outage (or bad keys)
+# retries quietly instead of hammering the API.
 Restart=always
 RestartSec=30
+RestartSteps=10
+RestartMaxDelaySec=600
 
 # main.py handles SIGTERM: it stops the streams and cancels open entry orders.
 # Give that time to reach Alpaca before systemd falls back to SIGKILL.

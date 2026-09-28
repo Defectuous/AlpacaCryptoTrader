@@ -1,7 +1,7 @@
 """
 AlpacaCryptoTrader — main entry point.
 
-Breakout rotation across the configured allowlist by default.
+Trades the configured symbols on the exchange chosen by BROKER in .env.
 Paper trading by default (set ALPACA_PAPER=false in .env to go live).
 
 Run:
@@ -17,8 +17,8 @@ import pandas as pd
 from loguru import logger
 
 import config
+from brokers import get_broker
 from data.market_data import get_bars, get_latest_quote
-from trader.alpaca_client import get_trading_client
 from trader.discord_notifier import (
     format_account_line,
     has_been_notified as discord_has_been_notified,
@@ -44,6 +44,8 @@ from trader.journal import (
 )
 from trader.order_manager import (
     cancel_open_buy_orders,
+    cancel_order,
+    close_position,
     get_account_info,
     get_open_orders,
     get_open_positions,
@@ -59,7 +61,6 @@ from trader.risk_manager import (
 )
 from trader.indicators import calculate_rsi, identify_four_hour_trend
 from trader.strategy import detect_signal
-from trader.streaming import LiveStreamRunner
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -105,41 +106,36 @@ def _build_account_line() -> str:
 # Position monitoring
 # ---------------------------------------------------------------------------
 
+# False until the first sync has recorded the fills that existed at startup.
+_fill_baseline_done = False
+
 def sync_open_positions_to_journal() -> None:
     """
-    Cross-reference Alpaca's live positions / closed orders against the
-    journal and update any rows whose status has changed.
+    Cross-reference the broker's closed orders against the journal and
+    update any rows whose status has changed.
 
     Strategy:
       - Fetch all orders that are NOT open (i.e., filled, cancelled, expired).
-      - For each journal order_id, if Alpaca reports it filled/cancelled, update.
+      - For each journal order_id, if the broker reports it filled/cancelled, update.
     """
+    global _fill_baseline_done
     try:
-        from alpaca.trading.requests import GetOrdersRequest
-        from alpaca.trading.enums import QueryOrderStatus
-
-        client = get_trading_client()
-        closed_orders = client.get_orders(
-            GetOrdersRequest(status=QueryOrderStatus.CLOSED, limit=500, nested=True)
-        )
+        closed_orders = get_broker().get_closed_orders(limit=500)
 
         orders_to_sync = []
         for parent_order in closed_orders:
             orders_to_sync.append((parent_order, None))
-            orders_to_sync.extend(
-                (leg, str(parent_order.id))
-                for leg in (getattr(parent_order, "legs", None) or [])
-            )
+            orders_to_sync.extend((leg, parent_order.id) for leg in parent_order.legs)
 
         for order, parent_order_id in orders_to_sync:
-            order_id = str(order.id)
-            status   = str(order.status).lower()
-            side     = str(getattr(order, "side", "")).upper()
-            symbol   = str(getattr(order, "symbol", ""))
-            journal_order_id = str(parent_order_id) if parent_order_id else order_id
+            order_id = order.id
+            status   = order.status
+            side     = order.side.upper()
+            symbol   = order.symbol
+            journal_order_id = parent_order_id or order_id
 
             filled_price: float | None = None
-            filled_qty = float(getattr(order, "filled_qty", 0) or 0)
+            filled_qty = order.filled_qty
 
             if status == "filled" and order.filled_avg_price:
                 filled_price = float(order.filled_avg_price)
@@ -173,21 +169,39 @@ def sync_open_positions_to_journal() -> None:
                 update_trade(journal_order_id, status)
 
             # Notify once per filled order (covers both BUY and SELL fills).
-            if status == "filled" and (
-                (not discord_has_been_notified(order_id))
-                or (not telegram_has_been_notified(order_id))
-            ):
-                account_line = _build_account_line()
-                if not discord_has_been_notified(order_id):
-                    if discord_send_fill_update(order, account_line):
-                        discord_mark_notified(order_id)
+            # Fills that already existed at startup are marked without sending,
+            # and a failed send is not retried, so a broken notifier can't
+            # trigger a resend of the whole order history on every sync.
+            if status == "filled":
+                pending = [
+                    (has, send, mark)
+                    for has, send, mark in (
+                        (discord_has_been_notified, discord_send_fill_update, discord_mark_notified),
+                        (telegram_has_been_notified, telegram_send_fill_update, telegram_mark_notified),
+                    )
+                    if not has(order_id)
+                ]
+                if pending and _fill_baseline_done:
+                    account_line = _build_account_line()
+                    for _, send, _ in pending:
+                        send(order, account_line)
+                for _, _, mark in pending:
+                    mark(order_id)
 
-                if not telegram_has_been_notified(order_id):
-                    if telegram_send_fill_update(order, account_line):
-                        telegram_mark_notified(order_id)
+        _fill_baseline_done = True
 
     except Exception as exc:
         logger.error(f"Position sync error: {exc}")
+
+    _ensure_protection()
+
+
+def _ensure_protection() -> None:
+    """Have the broker (re)place protective exits for every open bot position."""
+    try:
+        get_broker().ensure_protection()
+    except Exception as exc:
+        logger.error(f"Protective-exit check failed: {exc}")
 
 
 def log_position_summary() -> None:
@@ -222,11 +236,16 @@ def _handle_stream_bar(
 
 
 def _handle_stream_trade_update(update) -> None:
-    """Reconcile the journal when Alpaca publishes an order update."""
-    logger.info(
-        f"Trade update: {getattr(update, 'event', 'unknown')} "
-        f"order_id={getattr(update, 'order', update)}"
-    )
+    """Reconcile the journal when the broker publishes an order update.
+
+    Polling runners pass None after each pass to trigger a REST reconcile.
+    """
+    if update is not None:
+        order = getattr(update, "order", None)
+        logger.info(
+            f"Trade update: {getattr(update, 'event', 'unknown')} "
+            f"order_id={getattr(order, 'id', order)}"
+        )
     sync_open_positions_to_journal()
 
 
@@ -258,11 +277,9 @@ def _run_trend_flip_exits(
             continue
 
         trend = identify_four_hour_trend(evaluation_bars)
-        client = get_trading_client()
         if position_symbol is not None:
             position = live_positions[position_symbol]
-            side_value = str(position.get("side", "long")).lower()
-            side = "short" if side_value.endswith("short") else "long"
+            side = position.get("side", "long")
             expected_trend = "downtrend" if side == "short" else "uptrend"
             if trend != expected_trend:
                 logger.warning(
@@ -270,25 +287,21 @@ def _run_trend_flip_exits(
                     "canceling attached exits and closing position"
                 )
                 for order in get_open_orders(position_symbol, nested=True):
-                    try:
-                        client.cancel_order_by_id(order.id)
-                    except Exception as exc:
-                        logger.error(f"{symbol}: Could not cancel open exit order {order.id}: {exc}")
+                    if not cancel_order(order):
+                        logger.error(f"{symbol}: Exit order still open; not closing position")
                         break
                 else:
-                    try:
-                        order = client.close_position(position_symbol)
+                    order = close_position(position_symbol)
+                    if order is not None:
                         logger.success(
                             f"{symbol}: Trend-flip close submitted — id={order.id} "
                             f"old-side={side} new-trend={trend}"
                         )
-                    except Exception as exc:
-                        logger.error(f"{symbol}: Trend-flip close failed — {exc}")
 
         if pending_entries:
             momentum = float(calculate_rsi(evaluation_bars["close"], config.RSI_PERIOD).iloc[-1])
             for order in pending_entries:
-                side = "short" if str(order.side).lower() == "sell" else "long"
+                side = "short" if order.side == "sell" else "long"
                 expected_trend = "downtrend" if side == "short" else "uptrend"
                 momentum_aligned = (
                     momentum <= config.TREND_MOMENTUM_RSI_SHORT
@@ -297,14 +310,11 @@ def _run_trend_flip_exits(
                 )
                 if trend == expected_trend and momentum_aligned:
                     continue
-                try:
-                    client.cancel_order_by_id(order.id)
+                if cancel_order(order):
                     logger.info(
                         f"{symbol}: Canceled pending {side} entry; "
                         f"4h trend={trend}, hourly RSI={momentum:.1f}"
                     )
-                except Exception as exc:
-                    logger.error(f"{symbol}: Could not cancel stale entry {order.id}: {exc}")
 
 
 # ---------------------------------------------------------------------------
@@ -435,6 +445,8 @@ def run_scan_cycle(
     Scan configured symbols for the active strategy and place orders when
     conditions are met and daily limits allow.
     """
+    _ensure_protection()
+
     stats        = get_today_stats()
     trades_today = stats["trades_today"]
     daily_pnl    = stats["daily_pnl"]
@@ -613,7 +625,23 @@ def run_scan_cycle(
 def main() -> None:
     logger.info("=" * 60)
     logger.info("  AlpacaCryptoTrader")
-    logger.info(f"  Mode      : {'PAPER TRADING' if config.ALPACA_PAPER else '⚠  LIVE TRADING'}")
+    try:
+        broker = get_broker()
+    except Exception as exc:
+        logger.error(f"Cannot initialise broker {config.BROKER!r}: {exc}")
+        sys.exit(1)
+    if not broker.supports_trading:
+        logger.error(
+            f"Broker {broker.name!r} is market-data only; trading is not implemented yet. "
+            "Set BROKER=alpaca in .env."
+        )
+        sys.exit(1)
+    if config.ENABLE_SHORT_SELLING and not broker.supports_short:
+        logger.warning(f"ENABLE_SHORT_SELLING is on but {broker.name} cannot short — running long-only")
+        config.ENABLE_SHORT_SELLING = False
+
+    logger.info(f"  Broker    : {broker.name}")
+    logger.info(f"  Mode      : {'PAPER TRADING' if broker.is_paper else '⚠  LIVE TRADING'}")
     logger.info(f"  Symbols   : {', '.join(config.SYMBOLS)}")
     logger.info(f"  Short sell: {'ENABLED' if config.ENABLE_SHORT_SELLING else 'disabled'}")
     logger.info(f"  Max trades/day  : {config.MAX_TRADES_PER_DAY}")
@@ -622,7 +650,7 @@ def main() -> None:
     logger.info(f"  R:R target      : {config.REWARD_RISK_MIN} – {config.REWARD_RISK_TARGET}")
     logger.info(f"  Bar timeframe   : {config.BAR_TIMEFRAME}")
     logger.info(f"  Closed candle   : {config.USE_CLOSED_CANDLE}")
-    logger.info("  Runtime         : Alpaca WebSocket streaming")
+    logger.info(f"  Runtime         : {broker.name} market-data stream")
     logger.info(f"  Strategy mode   : {config.STRATEGY_MODE}")
     if config.STRATEGY_MODE == "breakout_rotation":
         logger.info(
@@ -639,18 +667,18 @@ def main() -> None:
     try:
         account = get_account_info()
         logger.info(
-            f"Connected to Alpaca ✓ | status={account['status']} | "
+            f"Connected to {broker.name} ✓ | status={account['status']} | "
             f"portfolio=${account['portfolio_value']:.2f}"
         )
     except Exception as exc:
-        logger.error(f"Cannot connect to Alpaca: {exc}")
-        logger.error("Check ALPACA_API_KEY and ALPACA_SECRET_KEY in your .env file.")
+        logger.error(f"Cannot connect to {broker.name}: {exc}")
+        logger.error("Check the API keys in your .env file.")
         sys.exit(1)
 
     sync_open_positions_to_journal()
     log_position_summary()
 
-    runner = LiveStreamRunner(
+    runner = broker.create_stream(
         config.SYMBOLS,
         on_bar_close=_handle_stream_bar,
         on_trade_update=_handle_stream_trade_update,
