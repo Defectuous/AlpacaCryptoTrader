@@ -67,7 +67,7 @@ from trader.streaming import LiveStreamRunner
 logger.remove()
 logger.add(
     sys.stdout,
-    colorize=True,
+    colorize=None,  # colour on a terminal, plain text under systemd/journald
     format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level:<8}</level> | {message}",
     level="INFO",
 )
@@ -656,18 +656,26 @@ def main() -> None:
         on_trade_update=_handle_stream_trade_update,
     )
 
+    exit_code = 0
     try:
         runner.start()
         logger.info("Waiting for streamed bars; scans run at completed bar boundaries.")
         while _running:
             time.sleep(1)
+            # A dead stream thread would leave the bot idle forever; exit non-zero
+            # so a supervisor (systemd) restarts it with fresh connections.
+            dead = runner.dead_streams()
+            if dead:
+                raise RuntimeError(f"stream thread(s) exited: {', '.join(dead)}")
     except Exception as exc:
         logger.error(f"Streaming runtime stopped unexpectedly: {exc}", exc_info=True)
+        exit_code = 1
     finally:
         runner.stop()
         logger.info("Cancelling any open entry orders before exit…")
         cancel_open_buy_orders()
         logger.info("AlpacaCryptoTrader stopped.")
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":

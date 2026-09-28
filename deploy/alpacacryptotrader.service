@@ -1,0 +1,36 @@
+# systemd unit for AlpacaCryptoTrader.
+# Installed by deploy/install_service.sh, which fills in __USER__ and __APP_DIR__.
+
+[Unit]
+Description=AlpacaCryptoTrader
+After=network-online.target
+Wants=network-online.target
+# Stop retrying if it crash-loops (e.g. bad API keys): 5 failures within 10 minutes.
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__APP_DIR__
+ExecStart=__APP_DIR__/.venv/bin/python main.py
+Environment=PYTHONUNBUFFERED=1
+
+# Restart on crashes and on dead streams; `systemctl stop` does not trigger a restart.
+Restart=always
+RestartSec=30
+
+# main.py handles SIGTERM: it stops the streams and cancels open entry orders.
+# Give that time to reach Alpaca before systemd falls back to SIGKILL.
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+# Light hardening: read-only system, writable logs/ only.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=__APP_DIR__/logs
+
+[Install]
+WantedBy=multi-user.target

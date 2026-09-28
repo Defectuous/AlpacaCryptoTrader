@@ -224,36 +224,42 @@ The bot **will not trade** when:
 
 ---
 
-## Running as a Service on Raspberry Pi
+## Running as a Service (Linux / Raspberry Pi)
+
+The bot ships with a systemd unit in [deploy/](deploy/). Clone the repo on the
+Pi, create `.env` from `.env.example`, then run the installer **as the user the
+bot should run as** (not root; it asks for sudo when needed):
 
 ```bash
-# Create a systemd service
-sudo nano /etc/systemd/system/alpacacryptotrader.service
+cd ~/AlpacaCryptoTrader
+cp .env.example .env && nano .env      # add your Alpaca keys
+chmod +x deploy/*.sh
+./deploy/install_service.sh
 ```
 
-```ini
-[Unit]
-Description=AlpacaCryptoTrader
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-User=pi
-WorkingDirectory=/home/pi/AlpacaCryptoTrader
-ExecStart=/home/pi/AlpacaCryptoTrader/.venv/bin/python main.py
-Restart=on-failure
-RestartSec=30
-
-[Install]
-WantedBy=multi-user.target
-```
+The installer creates `.venv`, installs `requirements.txt`, writes
+`/etc/systemd/system/alpacacryptotrader.service` with your user and path, and
+enables it so it starts at boot.
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable alpacacryptotrader
-sudo systemctl start alpacacryptotrader
-sudo journalctl -u alpacacryptotrader -f
+sudo systemctl status alpacacryptotrader     # is it running?
+journalctl -u alpacacryptotrader -f          # live console output
+sudo systemctl restart alpacacryptotrader    # after git pull or .env changes
+sudo systemctl stop alpacacryptotrader       # stop (cancels open entry orders)
+./deploy/uninstall_service.sh                # remove the service
 ```
+
+How the service behaves:
+
+- **Restarts automatically** 30 s after a crash, or if a WebSocket stream dies.
+  If it fails 5 times within 10 minutes (e.g. bad API keys) systemd stops
+  retrying; fix the cause, then `sudo systemctl reset-failed alpacacryptotrader`
+  and start it again.
+- **Stops cleanly**: `systemctl stop` sends SIGTERM, the bot closes its streams
+  and cancels open entry orders, with up to 60 s to finish.
+- **Waits for the network** at boot before starting.
+- **Can only write to `logs/`**; the rest of the system is read-only to it.
+  Daily log files are still written to `logs/trader_YYYY-MM-DD.log`.
 
 ---
 

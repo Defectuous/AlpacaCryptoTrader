@@ -192,6 +192,14 @@ class LiveStreamRunner:
             f"({config.BAR_TIMEFRAME} bars + quotes + trade updates)"
         )
 
+    def dead_streams(self) -> list[str]:
+        """Names of stream threads that have exited (stream.run returned or raised)."""
+        return [
+            thread.name
+            for thread in (self._market_thread, self._trade_thread)
+            if thread is not None and not thread.is_alive()
+        ]
+
     def stop(self) -> None:
         self._market_stream.stop()
         self._trade_stream.stop()
