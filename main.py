@@ -38,7 +38,7 @@ from trader.telegram_notifier import (
 from trader.journal import (
     ensure_journal,
     get_open_trade_symbols,
-    get_open_trade_order_id,
+    get_open_trade,
     get_today_stats,
     log_trade,
     update_trade,
@@ -112,6 +112,24 @@ def _build_account_line() -> str:
 
 # False until the first sync has recorded the fills that existed at startup.
 _fill_baseline_done = False
+_logged_fill_ids: set[str] = set()
+
+def _is_exit_fill(order, open_trade: dict) -> bool:
+    """True when a filled standalone order closes the journal's open trade.
+
+    Older fills for the same symbol (a previous position's buy or sell) and
+    same-side fills must not be booked as this trade's exit.
+    """
+    if order.id == open_trade["order_id"]:
+        return False
+    closing_side = "BUY" if open_trade["side"] == "SHORT" else "SELL"
+    if order.side.upper() != closing_side:
+        return False
+    opened_at = open_trade["opened_at"]
+    if opened_at and order.submitted_at and order.submitted_at < opened_at:
+        return False
+    return True
+
 
 def sync_open_positions_to_journal() -> None:
     """
@@ -143,6 +161,8 @@ def sync_open_positions_to_journal() -> None:
 
             if status == "filled" and order.filled_avg_price:
                 filled_price = float(order.filled_avg_price)
+            if filled_price is not None and order_id not in _logged_fill_ids:
+                _logged_fill_ids.add(order_id)
                 logger.success(
                     f"{side} filled ✓ {symbol} | "
                     f"qty={filled_qty:.8f} price={filled_price:.8f} order_id={order_id}"
@@ -158,10 +178,10 @@ def sync_open_positions_to_journal() -> None:
                     symbol=symbol,
                 )
             elif status == "filled":
-                entry_order_id = get_open_trade_order_id(symbol)
-                if entry_order_id and entry_order_id != order_id:
+                open_trade = get_open_trade(symbol)
+                if open_trade and _is_exit_fill(order, open_trade):
                     update_trade(
-                        entry_order_id,
+                        open_trade["order_id"],
                         status,
                         filled_price,
                         exit_order_id=order_id,

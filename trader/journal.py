@@ -258,8 +258,12 @@ def get_open_trade_symbols() -> list[str]:
         return []
 
 
-def get_open_trade_order_id(symbol: str) -> str | None:
-    """Return the latest unclosed journal order ID for a symbol."""
+def get_open_trade(symbol: str) -> dict | None:
+    """Return the latest unclosed journal trade for a symbol.
+
+    Keys: order_id, side ("LONG"/"SHORT") and opened_at (UTC datetime or None),
+    so callers can tell a real exit fill from an unrelated older order.
+    """
     ensure_journal()
     open_statuses = {"new", "pending", "accepted", "partially_filled", "held", "filled"}
     try:
@@ -273,7 +277,13 @@ def get_open_trade_order_id(symbol: str) -> str | None:
         ]
         if open_rows.empty:
             return None
-        return str(open_rows.iloc[-1]["order_id"])
+        row = open_rows.iloc[-1]
+        opened_at = pd.to_datetime(f"{row['date']} {row['time_utc']}", utc=True, errors="coerce")
+        return {
+            "order_id": str(row["order_id"]),
+            "side": str(row.get("side", "LONG")).upper(),
+            "opened_at": None if pd.isna(opened_at) else opened_at.to_pydatetime(),
+        }
     except Exception as exc:
         logger.error(f"Error querying open trade for {symbol}: {exc}")
         return None
