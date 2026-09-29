@@ -9,6 +9,7 @@ Run:
 """
 from __future__ import annotations
 
+import os
 import signal
 import sys
 import time
@@ -72,9 +73,12 @@ logger.add(
     format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level:<8}</level> | {message}",
     level="INFO",
 )
+# Rotate at local midnight so each file holds exactly one calendar day.
+# ("1 day" would rotate 24 h after startup, mixing two days in one file.)
+# A restart mid-day appends to that day's existing file.
 logger.add(
     "logs/trader_{time:YYYY-MM-DD}.log",
-    rotation="1 day",
+    rotation="00:00",
     retention="30 days",
     level="DEBUG",
     encoding="utf-8",
@@ -708,6 +712,11 @@ def main() -> None:
         logger.info("Cancelling any open entry orders before exit…")
         cancel_open_buy_orders()
         logger.info("AlpacaCryptoTrader stopped.")
+    if exit_code:
+        # A scan stuck in a worker thread would block a normal interpreter exit
+        # (and so the systemd restart); flush the logs and exit immediately.
+        logger.remove()
+        os._exit(exit_code)
     sys.exit(exit_code)
 
 

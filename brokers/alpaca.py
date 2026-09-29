@@ -59,6 +59,25 @@ MINUTES_PER_BAR: dict[str, int] = {"1Min": 1, "5Min": 5, "15Min": 15, "1Hour": 6
 ENTRY_TAG = "acx-e-"            # entry orders placed by the bot
 EXIT_TAG = "acx-x-"             # protective exits placed by ensure_protection()
 _QTY_TOLERANCE = 0.001          # re-place the stop if position size drifts > 0.1 %
+_HTTP_TIMEOUT = (10, 30)        # (connect, read) seconds for every REST call
+
+
+def _with_timeout(client: Any) -> Any:
+    """Give an alpaca-py REST client a default request timeout.
+
+    alpaca-py sends requests with no timeout, so a connection that drops
+    mid-request blocks forever and freezes the scan thread (and the stream
+    loop waiting on it). With a timeout the call raises and the scan moves on.
+    """
+    session = client._session
+    send = session.request
+
+    def request(method, url, **kwargs):
+        kwargs.setdefault("timeout", _HTTP_TIMEOUT)
+        return send(method, url, **kwargs)
+
+    session.request = request
+    return client
 
 
 def _plain(value: float | None) -> str:
@@ -97,15 +116,15 @@ class AlpacaBroker(Broker):
             raise ValueError(
                 "ALPACA_API_KEY and ALPACA_SECRET_KEY must be set in your .env file."
             )
-        self._trading = TradingClient(
+        self._trading = _with_timeout(TradingClient(
             api_key=config.ALPACA_API_KEY,
             secret_key=config.ALPACA_SECRET_KEY,
             paper=config.ALPACA_PAPER,
-        )
-        self._data = CryptoHistoricalDataClient(
+        ))
+        self._data = _with_timeout(CryptoHistoricalDataClient(
             api_key=config.ALPACA_API_KEY,
             secret_key=config.ALPACA_SECRET_KEY,
-        )
+        ))
         # symbol -> (min_order_size, min_trade_increment, price_increment); loaded lazily.
         self._assets: dict[str, tuple[float, float, float]] = {}
         logger.info(f"Alpaca broker initialised ({'PAPER' if self.is_paper else 'LIVE'} mode)")

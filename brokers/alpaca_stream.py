@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import threading
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -22,6 +23,10 @@ _TIMEFRAME_MINUTES = {
     "15Min": 15,
     "1Hour": 60,
 }
+
+# Quotes arrive every few seconds; this long without any market message means the
+# stream (or a scan blocking its loop) is stuck even though the thread is alive.
+_STALL_SECONDS = 600
 
 
 def _bucket_start(timestamp: datetime, minutes: int) -> datetime:
@@ -113,6 +118,7 @@ class AlpacaStreamRunner(StreamRunner):
         self._market_thread: threading.Thread | None = None
         self._trade_thread: threading.Thread | None = None
         self._scan_lock = threading.Lock()
+        self._last_market_message = time.monotonic()
         self._quotes: dict[str, dict[str, float]] = {}
         self._frames: dict[str, pd.DataFrame] = {}
         self._aggregators = {symbol: _BarAggregator(minutes) for symbol in symbols}
@@ -123,6 +129,7 @@ class AlpacaStreamRunner(StreamRunner):
                 self._frames[symbol] = bars.tail(config.BARS_LOOKBACK).copy()
 
     async def _handle_quote(self, quote: Any) -> None:
+        self._last_market_message = time.monotonic()
         bid = float(quote.bid_price)
         ask = float(quote.ask_price)
         mid = (bid + ask) / 2.0
@@ -133,6 +140,7 @@ class AlpacaStreamRunner(StreamRunner):
         }
 
     async def _handle_bar(self, bar: Any) -> None:
+        self._last_market_message = time.monotonic()
         completed = self._aggregators[bar.symbol].update(bar)
         if completed is None:
             return
@@ -182,6 +190,7 @@ class AlpacaStreamRunner(StreamRunner):
             name="alpaca-trade-stream",
             daemon=True,
         )
+        self._last_market_message = time.monotonic()
         self._market_thread.start()
         self._trade_thread.start()
         logger.info(
@@ -190,12 +199,16 @@ class AlpacaStreamRunner(StreamRunner):
         )
 
     def dead_streams(self) -> list[str]:
-        """Names of stream threads that have exited (stream.run returned or raised)."""
-        return [
+        """Stream threads that have exited, or a market stream gone silent."""
+        dead = [
             thread.name
             for thread in (self._market_thread, self._trade_thread)
             if thread is not None and not thread.is_alive()
         ]
+        silent = time.monotonic() - self._last_market_message
+        if self._market_thread is not None and silent > _STALL_SECONDS:
+            dead.append(f"alpaca-market-stream (no data for {silent / 60:.0f} min)")
+        return dead
 
     def stop(self) -> None:
         self._market_stream.stop()
