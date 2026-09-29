@@ -14,6 +14,7 @@ checked against the quote whenever ensure_protection() runs.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 from typing import Any
 from uuid import uuid4
 
@@ -22,8 +23,9 @@ from alpaca.data.historical import CryptoHistoricalDataClient
 from alpaca.data.requests import CryptoBarsRequest, CryptoLatestQuoteRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, QueryOrderStatus, TimeInForce
+from alpaca.trading.enums import AssetClass, AssetStatus, OrderSide, QueryOrderStatus, TimeInForce
 from alpaca.trading.requests import (
+    GetAssetsRequest,
     GetOrdersRequest,
     LimitOrderRequest,
     MarketOrderRequest,
@@ -59,8 +61,13 @@ EXIT_TAG = "acx-x-"             # protective exits placed by ensure_protection()
 _QTY_TOLERANCE = 0.001          # re-place the stop if position size drifts > 0.1 %
 
 
+def _plain(value: float | None) -> str:
+    """Fixed-point text; '%g' would give '8.6e-06' for PEPE, whose '-' breaks parsing."""
+    return f"{value or 0:.12f}".rstrip("0").rstrip(".") or "0"
+
+
 def _entry_client_id(stop: float | None, target: float | None) -> str:
-    return f"{ENTRY_TAG}{stop or 0:.10g}-{target or 0:.10g}-{uuid4().hex[:12]}"
+    return f"{ENTRY_TAG}{_plain(stop)}-{_plain(target)}-{uuid4().hex[:12]}"
 
 
 def _parse_entry_client_id(client_id: str) -> tuple[float | None, float | None]:
@@ -99,7 +106,41 @@ class AlpacaBroker(Broker):
             api_key=config.ALPACA_API_KEY,
             secret_key=config.ALPACA_SECRET_KEY,
         )
+        # symbol -> (min_order_size, min_trade_increment, price_increment); loaded lazily.
+        self._assets: dict[str, tuple[float, float, float]] = {}
         logger.info(f"Alpaca broker initialised ({'PAPER' if self.is_paper else 'LIVE'} mode)")
+
+    # ---- Assets and increments --------------------------------------------------
+    def _load_assets(self) -> dict[str, tuple[float, float, float]]:
+        if not self._assets:
+            request = GetAssetsRequest(asset_class=AssetClass.CRYPTO, status=AssetStatus.ACTIVE)
+            for asset in self._trading.get_all_assets(request):
+                if asset.tradable:
+                    self._assets[asset.symbol] = (
+                        float(asset.min_order_size or 0),
+                        float(asset.min_trade_increment or 1e-9),
+                        float(asset.price_increment or 1e-9),
+                    )
+        return self._assets
+
+    def list_symbols(self) -> list[str]:
+        return sorted(symbol for symbol in self._load_assets() if symbol.endswith("/USD"))
+
+    def _increments(self, symbol: str) -> tuple[float, float, float]:
+        return self._load_assets().get(symbol, (0.0, 1e-9, 1e-9))
+
+    def _qty(self, symbol: str, qty: float) -> float:
+        """Round *qty* down to the asset's trade increment and enforce its minimum size."""
+        min_qty, qty_inc, _ = self._increments(symbol)
+        rounded = float(Decimal(str(qty)).quantize(Decimal(str(qty_inc)), rounding=ROUND_DOWN))
+        if rounded <= 0 or rounded < min_qty:
+            raise ValueError(f"{symbol}: qty {qty} is below Alpaca's minimum order size {min_qty}")
+        return rounded
+
+    def _price(self, symbol: str, price: float) -> float:
+        """Round *price* to the asset's tick size (8 decimals is too coarse for PEPE/SHIB)."""
+        price_inc = self._increments(symbol)[2]
+        return float(Decimal(str(price)).quantize(Decimal(str(price_inc)), rounding=ROUND_HALF_UP))
 
     # ---- Capabilities -------------------------------------------------------
     @property
@@ -181,7 +222,7 @@ class AlpacaBroker(Broker):
         """Submit a plain entry; ensure_protection() adds the stop once it fills."""
         args: dict[str, Any] = {
             "symbol": request.symbol,
-            "qty": request.qty,
+            "qty": self._qty(request.symbol, request.qty),
             "side": OrderSide.SELL if request.side == "sell" else OrderSide.BUY,
             "time_in_force": TimeInForce.GTC,
             "client_order_id": request.client_order_id
@@ -191,7 +232,7 @@ class AlpacaBroker(Broker):
             if request.limit_price is None:
                 raise ValueError("limit order requires limit_price")
             raw = self._trading.submit_order(
-                LimitOrderRequest(limit_price=round(request.limit_price, 8), **args)
+                LimitOrderRequest(limit_price=self._price(request.symbol, request.limit_price), **args)
             )
         else:
             raw = self._trading.submit_order(MarketOrderRequest(**args))
@@ -205,9 +246,10 @@ class AlpacaBroker(Broker):
 
     # ---- Managed exits ------------------------------------------------------------
     def _latest_entry_targets(self, symbol: str) -> tuple[float | None, float | None]:
-        """Stop/target from the most recent filled bot entry in *symbol*."""
+        """Stop/target from the most recent (partly) filled bot entry in *symbol*."""
+        # ALL, not CLOSED: a partly filled entry is still open but already needs a stop.
         request = GetOrdersRequest(
-            status=QueryOrderStatus.CLOSED, symbols=[symbol], limit=50, direction="desc"
+            status=QueryOrderStatus.ALL, symbols=[symbol], limit=50, direction="desc"
         )
         for raw in self._trading.get_orders(request):
             order = self._order(raw)
@@ -219,15 +261,17 @@ class AlpacaBroker(Broker):
         # Stop-limit with a slippage buffer; Alpaca crypto has no plain stop orders.
         buffer = config.MAX_SLIPPAGE_PCT
         is_long = position.side == "long"
-        limit = stop * (1 - buffer) if is_long else stop * (1 + buffer)
+        symbol = position.symbol
+        stop = self._price(symbol, stop)
+        limit = self._price(symbol, stop * (1 - buffer) if is_long else stop * (1 + buffer))
         raw = self._trading.submit_order(
             StopLimitOrderRequest(
-                symbol=position.symbol,
-                qty=position.qty,
+                symbol=symbol,
+                qty=self._qty(symbol, position.qty),
                 side=OrderSide.SELL if is_long else OrderSide.BUY,
                 time_in_force=TimeInForce.GTC,
-                stop_price=round(stop, 8),
-                limit_price=round(limit, 8),
+                stop_price=stop,
+                limit_price=limit,
                 client_order_id=f"{EXIT_TAG}{uuid4().hex[:16]}",
             )
         )
@@ -246,35 +290,43 @@ class AlpacaBroker(Broker):
                 exits.setdefault(order.symbol, []).append(order)
 
         for symbol, position in positions.items():
-            stop, target = self._latest_entry_targets(symbol)
-            if stop is None:
-                logger.debug(f"{symbol}: Position has no bot entry with a stop; leaving it unmanaged")
-                continue
+            # One coin's failure (e.g. dust below the minimum size) must not
+            # leave the other positions unchecked.
+            try:
+                self._protect(position, exits.get(symbol, []))
+            except Exception as exc:
+                logger.error(f"{symbol}: Protective-exit check failed: {exc}")
 
-            quote = self.get_latest_quote(symbol)
-            is_long = position.side == "long"
-            price = quote["bid"] if is_long else quote["ask"]
-            target_hit = target is not None and price > 0 and (
-                price >= target if is_long else price <= target
-            )
-            stop_breached = price > 0 and (price <= stop if is_long else price >= stop)
-            current = exits.get(symbol, [])
+    def _protect(self, position: Position, current: list[Order]) -> None:
+        symbol = position.symbol
+        stop, target = self._latest_entry_targets(symbol)
+        if stop is None:
+            logger.debug(f"{symbol}: Position has no bot entry with a stop; leaving it unmanaged")
+            return
 
-            if target_hit or (stop_breached and not current):
-                reason = "take-profit reached" if target_hit else "stop breached while unprotected"
-                logger.warning(f"{symbol}: {reason} (price={price:.8f}); closing position")
-                for order in current:
-                    self.cancel_order(order.id)
-                self.close_position(symbol)
-                continue
+        quote = self.get_latest_quote(symbol)
+        is_long = position.side == "long"
+        price = quote["bid"] if is_long else quote["ask"]
+        target_hit = target is not None and price > 0 and (
+            price >= target if is_long else price <= target
+        )
+        stop_breached = price > 0 and (price <= stop if is_long else price >= stop)
 
-            if current and all(
-                abs(order.qty - position.qty) <= position.qty * _QTY_TOLERANCE for order in current
-            ):
-                continue
-            for order in current:       # wrong size (partial fill / fees): replace
+        if target_hit or (stop_breached and not current):
+            reason = "take-profit reached" if target_hit else "stop breached while unprotected"
+            logger.warning(f"{symbol}: {reason} (price={price:.8f}); closing position")
+            for order in current:
                 self.cancel_order(order.id)
-            self._place_stop(position, stop)
+            self.close_position(symbol)
+            return
+
+        if current and all(
+            abs(order.qty - position.qty) <= position.qty * _QTY_TOLERANCE for order in current
+        ):
+            return
+        for order in current:       # wrong size (partial fill / fees): replace
+            self.cancel_order(order.id)
+        self._place_stop(position, stop)
 
     # ---- Market data ----------------------------------------------------------------
     def _fetch_bars(self, symbol: str, timeframe: str, start: datetime, end: datetime | None) -> pd.DataFrame:

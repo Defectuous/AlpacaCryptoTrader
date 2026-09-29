@@ -30,12 +30,21 @@ TELEGRAM_NOTIFICATIONS_ENABLED: bool = bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT
 # ---------------------------------------------------------------------------
 # Symbols to watch
 # ---------------------------------------------------------------------------
-# LTC/USD removed — zero signals over 90 days (liquidity filter blocks it).
-# AVAX/USD removed — poor performance (PF 0.25, negative PnL).
-SYMBOLS: list[str] = [
-	"BTC/USD",
-	"ETH/USD",
-]
+# Set SYMBOLS in .env:
+#   SYMBOLS=all                 -> every tradable USD-quoted coin on the broker,
+#                                  loaded at startup (minus EXCLUDED_SYMBOLS)
+#   SYMBOLS=BTC/USD,ETH/USD     -> just these (the default)
+# History: LTC/USD and AVAX/USD were dropped from the BTC/ETH-tuned list after
+# poor 90-day backtests; "all" brings them back, so backtest before going live.
+_SYMBOLS_SETTING: str = os.getenv("SYMBOLS", "BTC/USD,ETH/USD").strip()
+TRADE_ALL_SYMBOLS: bool = _SYMBOLS_SETTING.lower() == "all"
+SYMBOLS: list[str] = (
+    [] if TRADE_ALL_SYMBOLS
+    else [s.strip().upper() for s in _SYMBOLS_SETTING.split(",") if s.strip()]
+)
+
+# Never traded even with SYMBOLS=all: USD stablecoins don't trend.
+EXCLUDED_SYMBOLS: set[str] = {"USDC/USD", "USDT/USD", "USDG/USD", "DAI/USD", "PYUSD/USD"}
 
 # ---------------------------------------------------------------------------
 # Risk profiles  (auto-selected based on realised volatility regime)
@@ -68,7 +77,9 @@ MAX_DAILY_LOSS: float = 2.00         # USD minimum floor (overridden by pct-base
 # Lowered 10 % from 500 → 450 to allow borderline-liquid alts through.
 MIN_LIQUIDITY_VOLUME_USD: float = 50.0
 
-MIN_POSITION_SIZE: float = 10.00     # USD notional minimum
+MIN_POSITION_SIZE: float = 12.00     # USD notional minimum; Alpaca rejects crypto orders
+                                     # under $10, and the stop sells fewer coins (after fees)
+                                     # at a lower price, so keep headroom above $10
 MAX_POSITION_SIZE: float = 300.00    # USD notional maximum
 
 # Percentage of total portfolio value the bot is allowed to deploy.

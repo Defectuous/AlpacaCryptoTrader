@@ -17,7 +17,7 @@ import pandas as pd
 from loguru import logger
 
 import config
-from brokers import get_broker
+from brokers import get_broker, resolve_symbols
 from data.market_data import get_bars, get_latest_quote
 from trader.discord_notifier import (
     format_account_line,
@@ -636,13 +636,18 @@ def main() -> None:
             "Set BROKER=alpaca in .env."
         )
         sys.exit(1)
+    try:
+        resolve_symbols()
+    except Exception as exc:
+        logger.error(f"Cannot load the symbol list from {broker.name}: {exc}")
+        sys.exit(1)
     if config.ENABLE_SHORT_SELLING and not broker.supports_short:
         logger.warning(f"ENABLE_SHORT_SELLING is on but {broker.name} cannot short — running long-only")
         config.ENABLE_SHORT_SELLING = False
 
     logger.info(f"  Broker    : {broker.name}")
     logger.info(f"  Mode      : {'PAPER TRADING' if broker.is_paper else '⚠  LIVE TRADING'}")
-    logger.info(f"  Symbols   : {', '.join(config.SYMBOLS)}")
+    logger.info(f"  Symbols   : {len(config.SYMBOLS)} — {', '.join(config.SYMBOLS)}")
     logger.info(f"  Short sell: {'ENABLED' if config.ENABLE_SHORT_SELLING else 'disabled'}")
     logger.info(f"  Max trades/day  : {config.MAX_TRADES_PER_DAY}")
     logger.info(f"  Std risk/trade  : {config.STANDARD_RISK_PCT_PER_TRADE*100:.1f}% of equity")

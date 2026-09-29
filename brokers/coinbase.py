@@ -160,6 +160,21 @@ class CoinbaseBroker(Broker):
         raise NotImplementedError(_NOT_READY)
 
     # ---- Market data ----------------------------------------------------------------
+    def list_symbols(self) -> list[str]:
+        """Online USD spot pairs; in futures mode, only those with a futures product."""
+        payload = _get("/market/products", {"product_type": "SPOT", "limit": 1000})
+        symbols = sorted(
+            f"{p['base_currency_id']}/USD"
+            for p in payload.get("products", [])
+            if p.get("quote_currency_id") == "USD"
+            and p.get("status") == "online"
+            and not p.get("trading_disabled")
+            and not p.get("is_disabled")
+        )
+        if self.market == "futures":
+            symbols = [s for s in symbols if s in self.futures_products]
+        return symbols
+
     def get_bars_history(
         self, symbol: str, start: datetime, end: datetime, timeframe: str
     ) -> pd.DataFrame:

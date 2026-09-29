@@ -175,6 +175,10 @@ class Broker(ABC):
 
     # ---- Market data ----------------------------------------------------------------
     @abstractmethod
+    def list_symbols(self) -> list[str]:
+        """Every tradable USD-quoted crypto pair, in bot form ("BTC/USD"), sorted."""
+
+    @abstractmethod
     def get_bars(self, symbol: str, lookback: int, timeframe: str) -> pd.DataFrame:
         """Most recent *lookback* OHLCV bars, UTC-indexed, oldest first."""
 

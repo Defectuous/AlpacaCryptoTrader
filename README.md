@@ -1,12 +1,15 @@
 # AlpacaCryptoTrader
 
-A beginner-friendly crypto trading bot built with the [Alpaca Markets](https://alpaca.markets) API and Python.
+A beginner-friendly crypto trading bot in Python. It trades on
+[Alpaca Markets](https://alpaca.markets) today, with an exchange-neutral broker
+layer and a Coinbase adapter in progress for long **and** short trading later.
 
-**Strategy:** 4-hour trend with hourly momentum confirmation
-**Coins:** BTC, ETH
-**Account size:** Designed for a $100 starting balance  
-**Risk per trade:** $1 max | Daily loss limit: $2  
-**R:R target:** 1.5 – 2.1  
+**Strategy:** 4-hour trend with hourly momentum confirmation  
+**Coins:** BTC and ETH by default, or every Alpaca USD coin with `SYMBOLS=all`  
+**Exchange:** Alpaca, paper trading by default (long only; see [Brokers](#brokers))  
+**Risk per trade:** 1% of equity (2% when volatility is high)  
+**Daily limits:** 5 entries; pause at a 3% daily loss (5% in high volatility)  
+**R:R:** minimum 1.5 to take a trade  
 **Platforms:** Windows, Linux, Raspberry Pi 5 (ARM64)
 
 ---
@@ -17,6 +20,7 @@ A beginner-friendly crypto trading bot built with the [Alpaca Markets](https://a
 AlpacaCryptoTrader/
 ├── main.py                 ← run this
 ├── config.py               ← all tunable settings
+├── backtest_runner.py      ← replay the strategy on historical bars
 ├── requirements.txt
 ├── .env.example            ← copy to .env and fill in your keys
 ├── brokers/                ← one adapter per exchange (see "Brokers" below)
@@ -25,17 +29,22 @@ AlpacaCryptoTrader/
 │   ├── alpaca_stream.py    ← Alpaca WebSocket bars/quotes/order updates
 │   ├── coinbase.py         ← Coinbase (market data now; trading to finish)
 │   └── polling_stream.py   ← REST polling runner for brokers without WebSockets
+├── backtest/
+│   ├── engine.py           ← bar-by-bar strategy simulator
+│   ├── report.py           ← performance summary
+│   ├── summarise.py        ← quick summary of the latest results CSV
+│   └── results/            ← backtest output CSVs (not committed)
 ├── data/
 │   └── market_data.py      ← bar + quote fetching via the active broker
 ├── deploy/                 ← systemd service + install/uninstall scripts
 ├── trader/
-│   ├── discord_notifier.py ← Discord webhook alerts
-│   ├── telegram_notifier.py← Telegram bot alerts
-│   ├── indicators.py       ← VWAP, EMA9/20, ATR, volume
-│   ├── strategy.py         ← signal detection (VWAP pullback)
+│   ├── strategy.py         ← signal detection for every strategy mode
+│   ├── indicators.py       ← EMA, RSI, ATR, VWAP, Bollinger, Stochastic RSI, 4h trend
 │   ├── risk_manager.py     ← position sizing, R:R validation, daily limits
 │   ├── order_manager.py    ← risk-sized entries with protective exits
-│   └── journal.py          ← CSV trade journal in logs/
+│   ├── journal.py          ← CSV trade journal in logs/
+│   ├── discord_notifier.py ← Discord webhook alerts
+│   └── telegram_notifier.py← Telegram bot alerts
 └── logs/
     ├── trade_journal.csv   ← auto-created on first trade
     └── trader_YYYY-MM-DD.log
@@ -48,8 +57,9 @@ AlpacaCryptoTrader/
 ### 1. Get Alpaca API Keys
 
 1. Sign up at <https://alpaca.markets> (free paper-trading account).
-2. In the dashboard, go to **Paper Trading → API Keys → Generate New Key**.
-3. Copy both the **API Key ID** and **Secret Key**.
+2. In the dashboard, switch to your **paper** account and generate API keys.
+3. Copy both the **API Key** and the **Secret Key** straight away; the secret
+   is only shown once. Regenerating keys invalidates the old pair.
 
 ### 2. Configure Environment
 
@@ -67,51 +77,49 @@ Copy-Item .env.example .env
 Edit `.env`:
 
 ```
+BROKER=alpaca              # exchange adapter: alpaca or coinbase
+SYMBOLS=BTC/USD,ETH/USD    # or "all" for every tradable USD coin on the broker
+ENABLE_SHORT_SELLING=false # shorts need a broker that can short (Alpaca can't)
+
 ALPACA_API_KEY=PKXXXXXXXXXXXXXXXX
 ALPACA_SECRET_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-ALPACA_PAPER=true       # keep true until you are consistently profitable
-DISCORD_WEBHOOK_URL=    # optional: Discord trade alerts webhook URL
-TELEGRAM_BOT_TOKEN=     # optional: Telegram BotFather token
-TELEGRAM_CHAT_ID=       # optional: Telegram chat/channel ID
+ALPACA_PAPER=true          # keep true until you are consistently profitable
+
+COINBASE_MARKET=spot       # only used with BROKER=coinbase
+
+DISCORD_WEBHOOK_URL=       # optional: Discord trade alerts webhook URL
+TELEGRAM_BOT_TOKEN=        # optional: Telegram BotFather token
+TELEGRAM_CHAT_ID=          # optional: Telegram chat/channel ID
 ```
 
-If you set `DISCORD_WEBHOOK_URL`, the bot posts trade alerts to Discord for:
+The variable names must match exactly (for example `ALPACA_SECRET_KEY`, not
+`ALPACA_API_SECRET`), or the bot starts without keys.
 
-- BUY order submitted
-- BUY filled
-- SELL filled
+If you set `DISCORD_WEBHOOK_URL`, the bot posts alerts to Discord when:
 
-Each alert includes an explanation of what was bought/sold plus the same
-`Account: ...` summary line shown in logs.
+- an entry order is submitted
+- any order fills (entries, stop exits and trend-flip closes)
+
+Each alert includes what was bought or sold plus the same `Account: ...`
+summary line shown in the logs. Fills that already existed when the bot
+started are not re-announced.
 
 If you set both `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`, the same alerts
 are also sent to Telegram.
 
 ### 3. Install Dependencies
 
-#### Windows / Linux x86-64
+Use a virtual environment so the bot's packages don't clash with system Python:
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-#### Raspberry Pi 5 (ARM64)
-
-```bash
-# numpy and pandas compile from source on ARM — install system dependencies first
-sudo apt update && sudo apt install -y python3-dev libatlas-base-dev gfortran
-
-pip install -r requirements.txt
-```
-
-> **Tip (Raspberry Pi):** Use a virtual environment to avoid conflicts with
-> system Python packages.
->
-> ```bash
-> python3 -m venv .venv
-> source .venv/bin/activate
-> pip install -r requirements.txt
-> ```
+numpy and pandas ship prebuilt wheels for Windows, Linux x86-64 and Raspberry
+Pi 5 (ARM64), so nothing needs compiling. On the Pi, the service installer
+below creates the virtual environment for you.
 
 ### 4. Run
 
@@ -119,15 +127,16 @@ pip install -r requirements.txt
 python main.py
 ```
 
-The bot starts in **paper mode** by default. It connects to Alpaca WebSockets,
-streams quotes and minute bars, aggregates them into the configured timeframe,
-and evaluates the strategy when each completed bar arrives. Order updates are
-also streamed through Alpaca's trading WebSocket. Watch the console output and
-the `logs/trade_journal.csv` file.
+The bot starts in **paper mode** by default. On Alpaca it connects to
+WebSockets, streams quotes and minute bars, aggregates them into the configured
+timeframe, and evaluates the strategy when each completed bar arrives. Order
+updates are streamed through Alpaca's trading WebSocket. Watch the console
+output and `logs/trade_journal.csv`.
 
-The bot still performs REST reconciliation at startup and after streamed trade
-updates. This protects the journal if a WebSocket disconnects or an update is
-missed.
+The bot also reconciles over REST at startup and after every streamed order
+update, so the journal stays correct if a WebSocket disconnects or an update is
+missed. If a stream dies for good, the bot exits with an error so the service
+restarts it.
 
 ---
 
@@ -136,8 +145,8 @@ missed.
 The default `4h_trend_momentum` mode trades BTC and ETH. It classifies the
 completed 4-hour trend from 20/50 EMAs, then requires hourly RSI momentum to
 agree before entry. Mixed 4-hour regimes do not open positions. A protective
-stop is attached at entry; there is no take-profit order, so the position stays
-open until the 4-hour trend changes or the stop is hit.
+stop is placed as soon as the entry fills; there is no take-profit order, so
+the position stays open until the 4-hour trend changes or the stop is hit.
 
 ```
 Trend            → 4-hour EMA20 above/below EMA50; insufficient separation is mixed
@@ -148,10 +157,33 @@ Invalidation     → Stop beyond the recent 12-hour swing, buffered by 0.15%
 Exit             → Close when completed 4-hour trend changes, or when the protective stop is hit
 ```
 
+**Risk profiles.** Each signal is sized with one of two profiles, chosen by
+volatility (ATR as a share of price):
+
+| Profile | When | Risk per trade | Daily loss pause | Drawdown pause | Max open positions |
+|---|---|---|---|---|---|
+| standard | ATR < 2.5% | 1% of equity | 3% | 12% from peak | 3 |
+| higher-risk | ATR ≥ 2.5% | 2% of equity | 5% | 18% from peak | 5 |
+
+Order size is also clamped to between $12 and $300 of notional; a trade is
+skipped if the clamp would push its risk above the profile's cap. (Alpaca
+rejects crypto orders under $10; the extra headroom keeps the protective stop,
+which sells slightly fewer coins at a lower price, above that minimum.)
+
+**Trading every coin.** `SYMBOLS=all` loads every tradable USD-quoted coin from
+the broker at startup (33 on Alpaca in September 2026), skipping the USD
+stablecoins listed in `EXCLUDED_SYMBOLS`. The strategy was tuned on BTC and
+ETH: a 180-day backtest across all 33 coins was net negative on closed trades
+(profit factor 0.85, 10 of 33 coins profitable), so treat `all` as a paper
+experiment and backtest before trading it live.
+
 Short entries need `ENABLE_SHORT_SELLING=true` in `.env` **and** a broker that
 can short. Alpaca crypto cannot, so on Alpaca the bot runs long-only and simply
-stays in cash during downtrends. The VWAP pullback, breakout, and Bollinger/Stochastic scalp modes remain available
-by setting `STRATEGY_MODE` in `.env`.
+stays in cash during downtrends.
+
+**Other strategy modes** can be selected with `STRATEGY_MODE` in `.env`:
+`breakout_rotation`, `bb_stoch_volume_scalp`, `htf_vwap_pullback` and
+`rsi_vwap_pullback`.
 
 ### The trade in one sentence
 
@@ -161,39 +193,41 @@ by setting `STRATEGY_MODE` in `.env`.
 
 ---
 
-## Configuration Reference (`config.py`)
+## Configuration Reference
+
+Settings marked `.env` are read from your `.env` file; everything else is
+edited in `config.py`.
 
 | Setting | Default | Description |
 |---|---|---|
-| `SYMBOLS` | `["BTC/USD","ETH/USD"]` | Coins to watch |
-| `STRATEGY_MODE` | `4h_trend_momentum` | Active signal mode |
+| `BROKER` | `alpaca` | Exchange adapter: `alpaca` or `coinbase` (`.env`) |
+| `ALPACA_PAPER` | `true` | Paper trading mode (`.env`) |
+| `ENABLE_SHORT_SELLING` | `false` | Take short entries when the broker supports them (`.env`) |
+| `STRATEGY_MODE` | `4h_trend_momentum` | Active signal mode (`.env`) |
+| `COINBASE_MARKET` | `spot` | Coinbase: `spot` (long only) or `futures` (long + short) (`.env`) |
+| `SYMBOLS` | `BTC/USD,ETH/USD` | Comma-separated coins, or `all` for every broker coin (`.env`) |
+| `EXCLUDED_SYMBOLS` | USD stablecoins | Never traded, even with `SYMBOLS=all` |
+| `BAR_TIMEFRAME` | `"1Hour"` | Input timeframe; bars are aggregated into 4-hour trend candles |
+| `BARS_LOOKBACK` | `500` | Hourly history loaded to warm up the indicators |
 | `TREND_HTF_EMA_FAST` / `TREND_HTF_EMA_SLOW` | `20` / `50` | Four-hour trend EMAs |
 | `TREND_MOMENTUM_RSI_LONG` / `TREND_MOMENTUM_RSI_SHORT` | `55` / `45` | Hourly RSI confirmation thresholds |
 | `TREND_STOP_LOOKBACK_BARS` | `12` | Hourly bars used for swing-stop placement |
-| `BREAKOUT_RANGE_BARS` | `20` | Completed bars in the prior range |
-| `BREAKOUT_VOLUME_MULTIPLIER` | `1.2` | Minimum breakout volume vs average |
-| `BREAKOUT_STOP_ATR_BUFFER` | `0.5` | Stop buffer below the prior range high, in ATRs |
-| `BREAKOUT_TP1_R` / `BREAKOUT_TP2_R` | `1.0` / `2.0` | Reward-to-risk levels for the two exit halves |
-| `BREAKOUT_MAX_ATR_PCT` | `0.05` | Maximum ATR as a fraction of price |
-| `BREAKOUT_MAX_EXTENSION_ATR` | `1.5` | Maximum entry extension above range, in ATRs |
-| `MAX_TRADES_PER_DAY` | `2` | Hard cap on entries |
-| `MAX_RISK_PER_TRADE` | `$1.00` | USD risked per trade |
-| `MAX_DAILY_LOSS` | `$2.00` | Trading halts after this loss |
-| `MIN_POSITION_SIZE` | `$25` | Minimum notional per order |
-| `MAX_POSITION_SIZE` | `$50` | Maximum notional per order |
-| `MAX_ACCOUNT_USAGE_PCT` | `0.75` | Max share of portfolio the bot can deploy (keeps reserve cash) |
+| `TREND_STOP_BUFFER_PCT` | `0.0015` | Stop buffer beyond the swing (0.15%) |
+| `STANDARD_RISK_PCT_PER_TRADE` / `HIGH_RISK_PCT_PER_TRADE` | `0.01` / `0.02` | Equity risked per trade per profile |
+| `STANDARD_MAX_DAILY_LOSS_PCT` / `HIGH_RISK_MAX_DAILY_LOSS_PCT` | `0.03` / `0.05` | Daily loss that pauses trading |
+| `STANDARD_MAX_DRAWDOWN_PCT` / `HIGH_RISK_MAX_DRAWDOWN_PCT` | `0.12` / `0.18` | Drawdown from peak equity that pauses trading |
+| `HIGH_RISK_ATR_THRESHOLD` | `0.025` | ATR share of price that selects the higher-risk profile |
+| `MAX_TRADES_PER_DAY` | `5` | Hard cap on entries |
+| `MIN_POSITION_SIZE` / `MAX_POSITION_SIZE` | `$12` / `$300` | Notional clamp per order |
+| `MAX_DAILY_LOSS` | `$2.00` | Fallback dollar limit, only used if account value is unavailable |
 | `REWARD_RISK_MIN` | `1.5` | Minimum R:R to take a trade |
 | `REWARD_RISK_TARGET` | `2.1` | R:R used for take-profit calculation |
-| `BAR_TIMEFRAME` | `"1Hour"` | Input timeframe; bars are aggregated into 4-hour trend candles |
-| `POLL_INTERVAL_SECONDS` | `60` | Legacy polling setting; streaming runtime scans on completed bars |
 | `USE_LIMIT_ORDERS` | `True` | Limit entry (recommended); `False` → market |
-| `VWAP_PULLBACK_THRESHOLD` | `0.005` | Max distance from VWAP to qualify (0.5%) |
-| `VOLUME_MULTIPLIER` | `1.2` | Bounce bar volume vs average volume |
+| `USE_CLOSED_CANDLE` | `True` | Evaluate signals on fully closed candles only |
 | `MAX_SPREAD_PCT` | `0.5` | Skip symbol if spread exceeds this % |
-| `ALPACA_PAPER` | `true` | Paper trading mode (`.env`) |
-| `BROKER` | `alpaca` | Exchange adapter: `alpaca` or `coinbase` (`.env`) |
-| `ENABLE_SHORT_SELLING` | `false` | Take short entries when the broker supports them (`.env`) |
-| `COINBASE_MARKET` | `spot` | Coinbase: `spot` (long only) or `futures` (long + short) (`.env`) |
+| `MAX_SLIPPAGE_PCT` | `0.005` | Max estimated entry slippage; also the stop-limit buffer on Alpaca |
+| `MIN_LIQUIDITY_VOLUME_USD` | `50` | Minimum average bar volume in USD |
+| `BREAKOUT_*`, `SCALP_*`, `VWAP_*` | — | Parameters for the other strategy modes |
 
 Notification settings are configured from `.env`:
 
@@ -219,7 +253,9 @@ Pick the adapter with `BROKER` in `.env`.
 the adapter places the entry as a plain order and then keeps a stop-limit exit
 on the filled position (`ensure_protection()`), re-checking it after every
 order update and every scan. The stop and target are stored in the entry's
-`client_order_id`, so this survives restarts without any local state.
+`client_order_id`, so this survives restarts without any local state. Alpaca
+takes its crypto fee out of the coins received, so the stop covers the actual
+position size rather than the ordered quantity.
 
 **Coinbase.** Candles and quotes come from Coinbase's public API (no account
 needed) and are polled at each bar close. With `COINBASE_MARKET=futures`,
@@ -227,6 +263,27 @@ orders are routed to the US perpetual-style futures (`BIP-20DEC30-CDE` for BTC,
 `ETP-20DEC30-CDE` for ETH), which allow shorts. Trading and account methods
 are stubs; the bot refuses to start on Coinbase until they are implemented.
 The steps are in the docstring of [brokers/coinbase.py](brokers/coinbase.py).
+
+---
+
+## Backtesting
+
+Replay the strategy over historical bars before trusting it with money:
+
+```bash
+python backtest_runner.py                                   # SYMBOLS from .env, 90 days
+python backtest_runner.py --symbols all --days 180          # every broker coin
+python backtest_runner.py --symbols BTC/USD ETH/USD --days 180
+python backtest_runner.py --start 2026-02-04 --end 2026-03-06
+python backtest_runner.py --days 365 --equity 500 --shorts  # include short trades
+python backtest/summarise.py 180                            # summarise latest multi-symbol 180-day run
+```
+
+Results are written to `backtest/results/`: one CSV per symbol, plus a
+`combined_*` CSV when more than one symbol is tested (that is the file
+`summarise.py` reads). Backtests fetch history through the active broker, so
+they use the same data source as live trading. The simulator does not model
+exchange fees or slippage, so live results will be somewhat worse.
 
 ---
 
@@ -238,7 +295,7 @@ Every order is logged to `logs/trade_journal.csv` with:
 - Entry, stop, and target prices
 - Position size, risk in USD, R:R ratio
 - Status (pending → filled / cancelled)
-- Exit price and P&L (updated when order closes)
+- Exit price and P&L (updated when the position closes)
 - The one-sentence reason for the trade
 
 Review this after every session. After 20+ journaled trades you will have
@@ -251,12 +308,13 @@ real data to evaluate your strategy.
 The bot **will not trade** when:
 
 - The spread is too wide (> 0.5%)
-- The completed 4-hour trend is mixed
+- The completed 4-hour trend is mixed, or is a downtrend while shorts are off
 - Hourly RSI does not confirm trend direction
-- Volatility, liquidity, spread, or estimated slippage is outside configured limits
-- The daily trade limit has been reached (2 trades)
-- The daily loss limit has been hit (-$2)
-- The symbol already has an open position today
+- Volatility, liquidity, or estimated slippage is outside configured limits
+- The daily trade limit has been reached (5 entries)
+- The daily loss pause (3% / 5% of equity) or drawdown pause (12% / 18%) is active
+- The symbol already has an open position or an open trade in today's journal
+- The profile's maximum number of open positions is reached
 
 ---
 
@@ -269,13 +327,13 @@ bot should run as** (not root; it asks for sudo when needed):
 ```bash
 cd ~/AlpacaCryptoTrader
 cp .env.example .env && nano .env      # add your Alpaca keys
-chmod +x deploy/*.sh
 ./deploy/install_service.sh
 ```
 
 The installer creates `.venv`, installs `requirements.txt`, writes
 `/etc/systemd/system/alpacacryptotrader.service` with your user and path, and
-enables it so it starts at boot.
+enables it so it starts at boot. Re-run it after pulling updates to the
+service file.
 
 ```bash
 sudo systemctl status alpacacryptotrader     # is it running?
@@ -291,7 +349,8 @@ How the service behaves:
   never gives up: the delay starts at 30 s and backs off to 10 minutes, so an
   internet or exchange outage (or bad API keys) retries quietly until fixed.
 - **Stops cleanly**: `systemctl stop` sends SIGTERM, the bot closes its streams
-  and cancels open entry orders, with up to 60 s to finish.
+  and cancels open entry orders, with up to 60 s to finish. Protective stops on
+  open positions are left in place.
 - **Waits for the network** at boot before starting.
 - **Can only write to `logs/`**; the rest of the system is read-only to it.
   Daily log files are still written to `logs/trader_YYYY-MM-DD.log`.

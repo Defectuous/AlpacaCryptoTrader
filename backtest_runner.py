@@ -1,12 +1,13 @@
 """
 AlpacaCryptoTrader — Backtest runner (CLI entry point).
 
-Fetches historical OHLCV data from Alpaca, replays the live strategy
+Fetches historical OHLCV data from the active broker, replays the live strategy
 bar-by-bar, and produces per-symbol performance reports plus CSV trade logs.
 
 Usage
 -----
     python backtest_runner.py
+    python backtest_runner.py --symbols all --days 180
     python backtest_runner.py --symbols BTC/USD ETH/USD --days 180
     python backtest_runner.py --symbols BTC/USD --days 90 --equity 5000 --shorts
     python backtest_runner.py --days 60 --out backtest/results
@@ -14,7 +15,7 @@ Usage
 
 Arguments
 ---------
---symbols    One or more symbols to test (default: all from config.SYMBOLS)
+--symbols    One or more symbols, or "all" for every broker coin (default: SYMBOLS from .env)
 --days       Calendar days of history to fetch (default: 90) [ignored if --start/--end given]
 --start      Explicit start date (YYYY-MM-DD), overrides --days
 --end        Explicit end date (YYYY-MM-DD), overrides --days
@@ -33,6 +34,7 @@ from pathlib import Path
 from loguru import logger
 
 import config
+from brokers import resolve_symbols
 from data.market_data import get_bars_history
 from backtest.engine import run_backtest, run_rotation_backtest
 from backtest.report import compute_stats, print_report, save_trades_csv
@@ -67,9 +69,9 @@ def _parse_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--symbols", nargs="+", default=config.SYMBOLS,
+        "--symbols", nargs="+", default=None,
         metavar="SYM",
-        help="Symbols to backtest (default: all from config.SYMBOLS)",
+        help='Symbols to backtest, or "all" for every broker coin (default: SYMBOLS from .env)',
     )
     parser.add_argument(
         "--days", type=int, default=90,
@@ -103,7 +105,19 @@ def _parse_args() -> argparse.Namespace:
         metavar="TF",
         help='Bar timeframe override, e.g. "15Min" "1Hour" (default: from config)',
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.symbols and [s.lower() for s in args.symbols] == ["all"]:
+        config.TRADE_ALL_SYMBOLS = True
+        config.SYMBOLS.clear()
+        args.symbols = None
+    if args.symbols is None:
+        args.symbols = list(resolve_symbols())
+    else:
+        # The trend strategy only trades config.SYMBOLS, so tested symbols must be in it.
+        args.symbols = [s.upper() for s in args.symbols]
+        config.SYMBOLS[:] = args.symbols
+    return args
 
 
 # ---------------------------------------------------------------------------
