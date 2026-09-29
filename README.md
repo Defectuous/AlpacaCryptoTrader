@@ -223,6 +223,7 @@ edited in `config.py`.
 | `REWARD_RISK_MIN` | `1.5` | Minimum R:R to take a trade |
 | `REWARD_RISK_TARGET` | `2.1` | R:R used for take-profit calculation |
 | `USE_LIMIT_ORDERS` | `True` | Limit entry (recommended); `False` → market |
+| `ENTRY_FILL_TIMEOUT_SECONDS` | `120` | Cancel the rest of a partly filled entry after this long so the filled part gets its stop (`.env`) |
 | `USE_CLOSED_CANDLE` | `True` | Evaluate signals on fully closed candles only |
 | `MAX_SPREAD_PCT` | `0.5` | Skip symbol if spread exceeds this % |
 | `MAX_SLIPPAGE_PCT` | `0.005` | Max estimated entry slippage; also the stop-limit buffer on Alpaca |
@@ -252,7 +253,10 @@ Pick the adapter with `BROKER` in `.env`.
 **Alpaca protective stops.** Alpaca rejects bracket/OTO orders for crypto, so
 the adapter places the entry as a plain order and then keeps a stop-limit exit
 on the filled position (`ensure_protection()`), re-checking it after every
-order update and every scan. The stop and target are stored in the entry's
+order update, every scan and once a minute. While a limit entry is still
+partly filled the stop is deferred (Alpaca would reject it as a potential wash
+trade); after `ENTRY_FILL_TIMEOUT_SECONDS`, or as soon as the stop price is
+breached, the unfilled remainder is cancelled and the filled part is protected. The stop and target are stored in the entry's
 `client_order_id`, so this survives restarts without any local state. Alpaca
 takes its crypto fee out of the coins received, so the stop covers the actual
 position size rather than the ordered quantity.

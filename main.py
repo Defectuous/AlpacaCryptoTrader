@@ -200,6 +200,9 @@ def sync_open_positions_to_journal() -> None:
     _ensure_protection()
 
 
+_PROTECTION_CHECK_SECONDS = 60
+
+
 def _ensure_protection() -> None:
     """Have the broker (re)place protective exits for every open bot position."""
     try:
@@ -697,8 +700,14 @@ def main() -> None:
     try:
         runner.start()
         logger.info("Waiting for streamed bars; scans run at completed bar boundaries.")
+        next_protection_check = time.monotonic() + _PROTECTION_CHECK_SECONDS
         while _running:
             time.sleep(1)
+            # Scans run hourly; check stops more often so a partly filled entry
+            # is resolved within ENTRY_FILL_TIMEOUT_SECONDS, not at the next bar.
+            if time.monotonic() >= next_protection_check:
+                _ensure_protection()
+                next_protection_check = time.monotonic() + _PROTECTION_CHECK_SECONDS
             # A dead stream thread would leave the bot idle forever; exit non-zero
             # so a supervisor (systemd) restarts it with fresh connections.
             dead = runner.dead_streams()

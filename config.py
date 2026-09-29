@@ -197,6 +197,11 @@ BARS_LOOKBACK: int = 500             # enough hourly history to warm up the 4h s
 # False → market order for entry (fills immediately, more slippage)
 USE_LIMIT_ORDERS: bool = True
 
+# A limit entry that is still only partly filled after this many seconds has its
+# unfilled remainder cancelled, so the filled part gets its protective stop.
+# (Alpaca rejects the stop while the entry is open: "potential wash trade".)
+ENTRY_FILL_TIMEOUT_SECONDS: int = int(os.getenv("ENTRY_FILL_TIMEOUT_SECONDS", "120"))
+
 # ---------------------------------------------------------------------------
 # Legacy loop setting retained for configuration compatibility. The live bot
 # now scans on completed streamed bars instead of sleeping between polls.

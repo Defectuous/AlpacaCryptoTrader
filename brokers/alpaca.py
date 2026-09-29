@@ -13,6 +13,7 @@ checked against the quote whenever ensure_protection() runs.
 """
 from __future__ import annotations
 
+import threading
 from datetime import datetime, timedelta, timezone
 from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 from typing import Any
@@ -127,6 +128,8 @@ class AlpacaBroker(Broker):
         ))
         # symbol -> (min_order_size, min_trade_increment, price_increment); loaded lazily.
         self._assets: dict[str, tuple[float, float, float]] = {}
+        # ensure_protection() runs from scans, trade updates and a timer; never overlap.
+        self._protect_lock = threading.Lock()
         logger.info(f"Alpaca broker initialised ({'PAPER' if self.is_paper else 'LIVE'} mode)")
 
     # ---- Assets and increments --------------------------------------------------
@@ -300,23 +303,30 @@ class AlpacaBroker(Broker):
         )
 
     def ensure_protection(self) -> None:
+        with self._protect_lock:
+            self._ensure_protection()
+
+    def _ensure_protection(self) -> None:
         positions = self.get_positions()
         if not positions:
             return
         exits: dict[str, list[Order]] = {}
+        entries: dict[str, list[Order]] = {}
         for order in self.get_open_orders(nested=True):
             if order.client_order_id.startswith(EXIT_TAG):
                 exits.setdefault(order.symbol, []).append(order)
+            elif order.client_order_id.startswith(ENTRY_TAG):
+                entries.setdefault(order.symbol, []).append(order)
 
         for symbol, position in positions.items():
             # One coin's failure (e.g. dust below the minimum size) must not
             # leave the other positions unchecked.
             try:
-                self._protect(position, exits.get(symbol, []))
+                self._protect(position, exits.get(symbol, []), entries.get(symbol, []))
             except Exception as exc:
                 logger.error(f"{symbol}: Protective-exit check failed: {exc}")
 
-    def _protect(self, position: Position, current: list[Order]) -> None:
+    def _protect(self, position: Position, current: list[Order], entries: list[Order]) -> None:
         symbol = position.symbol
         stop, target = self._latest_entry_targets(symbol)
         if stop is None:
@@ -330,6 +340,24 @@ class AlpacaBroker(Broker):
             price >= target if is_long else price <= target
         )
         stop_breached = price > 0 and (price <= stop if is_long else price >= stop)
+
+        # Alpaca rejects an exit priced through our own working entry as a
+        # potential wash trade, so wait for a partly filled entry to finish.
+        # Past the timeout (or once the stop is breached) cancel its remainder
+        # and protect what did fill.
+        if entries:
+            now = datetime.now(timezone.utc)
+            ages = [(now - o.submitted_at).total_seconds() for o in entries if o.submitted_at]
+            if not stop_breached and ages and max(ages) < config.ENTRY_FILL_TIMEOUT_SECONDS:
+                logger.debug(f"{symbol}: Entry still filling; protective stop deferred")
+                return
+            for order in entries:
+                logger.warning(
+                    f"{symbol}: Cancelling unfilled remainder of entry {order.id} "
+                    f"({order.filled_qty:.8f}/{order.qty:.8f} filled) so the position can be protected"
+                )
+                self.cancel_order(order.id)
+            return  # the cancel settles asynchronously; the next check places the stop
 
         if target_hit or (stop_breached and not current):
             reason = "take-profit reached" if target_hit else "stop breached while unprotected"
