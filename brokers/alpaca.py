@@ -14,6 +14,7 @@ checked against the quote whenever ensure_protection() runs.
 from __future__ import annotations
 
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 from typing import Any
@@ -61,6 +62,8 @@ ENTRY_TAG = "acx-e-"            # entry orders placed by the bot
 EXIT_TAG = "acx-x-"             # protective exits placed by ensure_protection()
 _QTY_TOLERANCE = 0.001          # re-place the stop if position size drifts > 0.1 %
 _HTTP_TIMEOUT = (10, 30)        # (connect, read) seconds for every REST call
+_CANCEL_CONFIRM_SECONDS = 10.0  # how long close_position() waits for cancels to settle
+_CANCEL_POLL_SECONDS = 0.5
 
 
 def _with_timeout(client: Any) -> Any:
@@ -129,7 +132,8 @@ class AlpacaBroker(Broker):
         # symbol -> (min_order_size, min_trade_increment, price_increment); loaded lazily.
         self._assets: dict[str, tuple[float, float, float]] = {}
         # ensure_protection() runs from scans, trade updates and a timer; never overlap.
-        self._protect_lock = threading.Lock()
+        # Reentrant because _protect() closes positions through close_position().
+        self._protect_lock = threading.RLock()
         logger.info(f"Alpaca broker initialised ({'PAPER' if self.is_paper else 'LIVE'} mode)")
 
     # ---- Assets and increments --------------------------------------------------
@@ -264,7 +268,37 @@ class AlpacaBroker(Broker):
         self._trading.cancel_order_by_id(order_id)
 
     def close_position(self, symbol: str) -> Order:
-        return self._order(self._trading.close_position(symbol.replace("/", "")))
+        """
+        Cancel *symbol*'s open orders, wait for Alpaca to confirm, then sell at market.
+
+        An open stop holds the coins, so a sell sent before its cancel settles
+        is rejected for insufficient quantity. If the cancels have not settled
+        within _CANCEL_CONFIRM_SECONDS this raises without selling; a stop that
+        did go is re-placed by the next ensure_protection() pass. Holds the
+        protection lock so that pass cannot re-place the stop mid-exit.
+        """
+        compact = symbol.replace("/", "")
+        if "/" not in symbol and symbol.endswith("USD"):
+            symbol = f"{symbol[:-3]}/USD"   # the order filter only matches "AAVE/USD"
+        with self._protect_lock:
+            pending = self.get_open_orders(symbol, nested=True)
+            for order in pending:
+                try:
+                    self.cancel_order(order.id)
+                except Exception as exc:    # may have filled or gone already; the poll decides
+                    logger.warning(f"{symbol}: Cancel of order {order.id} failed: {exc}")
+            deadline = time.monotonic() + _CANCEL_CONFIRM_SECONDS
+            while pending:
+                if time.monotonic() >= deadline:
+                    raise RuntimeError(
+                        f"{len(pending)} order(s) still open {_CANCEL_CONFIRM_SECONDS:.0f}s "
+                        "after cancelling; not selling"
+                    )
+                time.sleep(_CANCEL_POLL_SECONDS)
+                pending = self.get_open_orders(symbol, nested=True)
+            if not any(held.replace("/", "") == compact for held in self.get_positions()):
+                raise RuntimeError("no open position; its stop may have filled")
+            return self._order(self._trading.close_position(compact))
 
     # ---- Managed exits ------------------------------------------------------------
     def _latest_entry_targets(self, symbol: str) -> tuple[float | None, float | None]:
@@ -362,8 +396,6 @@ class AlpacaBroker(Broker):
         if target_hit or (stop_breached and not current):
             reason = "take-profit reached" if target_hit else "stop breached while unprotected"
             logger.warning(f"{symbol}: {reason} (price={price:.8f}); closing position")
-            for order in current:
-                self.cancel_order(order.id)
             self.close_position(symbol)
             return
 
