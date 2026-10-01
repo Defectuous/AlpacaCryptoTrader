@@ -27,6 +27,7 @@ from trader.discord_notifier import (
     send_buy_submitted as discord_send_buy_submitted,
     send_sell_submitted as discord_send_sell_submitted,
     send_fill_update as discord_send_fill_update,
+    send_profit_alert as discord_send_profit_alert,
 )
 from trader.telegram_notifier import (
     has_been_notified as telegram_has_been_notified,
@@ -34,6 +35,7 @@ from trader.telegram_notifier import (
     send_buy_submitted as telegram_send_buy_submitted,
     send_sell_submitted as telegram_send_sell_submitted,
     send_fill_update as telegram_send_fill_update,
+    send_profit_alert as telegram_send_profit_alert,
 )
 from trader.journal import (
     ensure_journal,
@@ -229,6 +231,63 @@ def _ensure_protection() -> None:
         get_broker().ensure_protection()
     except Exception as exc:
         logger.error(f"Protective-exit check failed: {exc}")
+
+
+def _check_profit_alerts() -> None:
+    """
+    Alert once per position when its sellable price is PROFIT_ALERT_PCT past entry.
+
+    Uses the bid for longs and the ask for shorts (what a close would actually
+    get), not the broker's last-trade mark. Alert-only: exits are unchanged.
+    Keyed by symbol and average entry, so a new position re-arms the alert.
+    """
+    if config.PROFIT_ALERT_PCT <= 0:
+        return
+    try:
+        positions = get_broker().get_positions()
+    except Exception as exc:
+        logger.error(f"Profit alert check failed: {exc}")
+        return
+    for symbol, position in positions.items():
+        key = f"profit-alert:{symbol.replace('/', '')}:{position.avg_entry:.10g}"
+        if discord_has_been_notified(key) or telegram_has_been_notified(key):
+            continue
+        if position.avg_entry <= 0 or position.qty <= 0:
+            continue
+        quote_symbol = symbol if "/" in symbol or not symbol.endswith("USD") else f"{symbol[:-3]}/USD"
+        try:
+            quote = get_broker().get_latest_quote(quote_symbol)
+        except Exception as exc:
+            logger.warning(f"{symbol}: Profit alert quote failed: {exc}")
+            continue
+        is_long = position.side == "long"
+        price = quote["bid"] if is_long else quote["ask"]
+        if price <= 0:
+            continue
+        move = price - position.avg_entry if is_long else position.avg_entry - price
+        gain_pct = move / position.avg_entry * 100.0
+        if gain_pct < config.PROFIT_ALERT_PCT:
+            continue
+        alert = {
+            "symbol": symbol,
+            "side": position.side,
+            "entry": position.avg_entry,
+            "price": price,
+            "price_label": "bid" if is_long else "ask",
+            "gain_pct": gain_pct,
+            "gain_usd": move * position.qty,
+            "qty": position.qty,
+        }
+        logger.success(
+            f"PROFIT ALERT ▶ {symbol} {gain_pct:+.2f}% (+${alert['gain_usd']:.2f}) | "
+            f"entry={position.avg_entry:.8g} {alert['price_label']}={price:.8g}"
+        )
+        sent = discord_send_profit_alert(alert) | telegram_send_profit_alert(alert)
+        notifiers = config.DISCORD_NOTIFICATIONS_ENABLED or config.TELEGRAM_NOTIFICATIONS_ENABLED
+        # Retry next check if every configured notifier failed.
+        if sent or not notifiers:
+            discord_mark_notified(key)
+            telegram_mark_notified(key)
 
 
 def log_position_summary() -> None:
@@ -727,6 +786,7 @@ def main() -> None:
             # is resolved within ENTRY_FILL_TIMEOUT_SECONDS, not at the next bar.
             if time.monotonic() >= next_protection_check:
                 _ensure_protection()
+                _check_profit_alerts()
                 next_protection_check = time.monotonic() + _PROTECTION_CHECK_SECONDS
             # A dead stream thread would leave the bot idle forever; exit non-zero
             # so a supervisor (systemd) restarts it with fresh connections.

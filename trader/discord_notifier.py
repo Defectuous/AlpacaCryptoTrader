@@ -139,6 +139,17 @@ def send_buy_submitted(order_info: dict[str, Any], account_line: str) -> bool:
     return _send_message(message)
 
 
+def send_profit_alert(alert: dict[str, Any]) -> bool:
+    message = (
+        f"PROFIT ALERT (+{config.PROFIT_ALERT_PCT:g}% reached)\n"
+        f"Symbol: {alert['symbol']} ({alert['side'].upper()})\n"
+        f"Entry: {alert['entry']:.8g} | Sellable now ({alert['price_label']}): {alert['price']:.8g}\n"
+        f"Gain: {alert['gain_pct']:+.2f}% ({'+' if alert['gain_usd'] >= 0 else '-'}${abs(alert['gain_usd']):.2f}) on qty {alert['qty']:.8g}\n"
+        f"The bot's exits are unchanged; close manually to take this profit."
+    )
+    return _send_message(message)
+
+
 def send_sell_submitted(order_info: dict[str, Any], account_line: str) -> bool:
     side = str(order_info.get("side", "LONG")).upper()
     exit_label = "BUY-COVER" if side == "SHORT" else "SELL"

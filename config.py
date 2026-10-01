@@ -36,6 +36,9 @@ DISCORD_NOTIFICATIONS_ENABLED: bool = bool(DISCORD_WEBHOOK_URL)
 TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 TELEGRAM_CHAT_ID: str = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 TELEGRAM_NOTIFICATIONS_ENABLED: bool = bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID)
+# Alert once when a position's sellable price (bid for longs) is this many
+# percent past its entry. Alert only; exits are unchanged. 0 disables.
+PROFIT_ALERT_PCT: float = float(os.getenv("PROFIT_ALERT_PCT", "5"))
 
 # ---------------------------------------------------------------------------
 # Symbols to watch

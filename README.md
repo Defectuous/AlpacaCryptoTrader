@@ -235,6 +235,9 @@ Notification settings are configured from `.env`:
 - `DISCORD_WEBHOOK_URL`
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
+- `PROFIT_ALERT_PCT` (default `5`): alert once when a position is up this many
+  percent at its sellable price (bid for longs, ask for shorts), checked every
+  60 seconds. Alert only; the bot's exits are unchanged. `0` disables.
 
 ---
 
