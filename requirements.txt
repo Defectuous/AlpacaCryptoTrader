@@ -1,5 +1,6 @@
 alpaca-py>=0.38.0
 pandas>=2.0.0
+PyMySQL>=1.1.0            # trade journal in MySQL / MariaDB (DB_HOST)
 numpy>=1.24.0
 python-dotenv>=1.0.0
 loguru>=0.7.0

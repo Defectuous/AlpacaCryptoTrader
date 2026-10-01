@@ -3,8 +3,10 @@
 
 [Unit]
 Description=AlpacaCryptoTrader
-After=network-online.target
+After=network-online.target mariadb.service
 Wants=network-online.target
+# Start after a local MariaDB when present (trade journal); harmless without one.
+Wants=mariadb.service
 # Never give up: an internet or exchange outage must not leave the bot off.
 StartLimitIntervalSec=0
 

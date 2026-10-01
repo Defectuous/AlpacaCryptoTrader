@@ -1,5 +1,6 @@
 """
-Trade journal — CSV-backed log of every trade.
+Trade journal — log of every trade, in MySQL / MariaDB when DB_HOST is set
+(see trader/journal_db.py), otherwise in logs/trade_journal.csv.
 
 The journal is the single source of truth for:
   - How many trades have been placed today
@@ -15,6 +16,13 @@ from pathlib import Path
 
 import pandas as pd
 from loguru import logger
+
+import config
+
+if config.DB_HOST:
+    from trader import journal_db as _db
+else:
+    _db = None
 
 # ---------------------------------------------------------------------------
 # File paths
@@ -57,6 +65,9 @@ def ensure_journal() -> None:
     Also migrates an existing file to add any new columns introduced since it
     was first created — new columns are appended with empty values.
     """
+    if _db:
+        _db.ensure()
+        return
     JOURNAL_DIR.mkdir(exist_ok=True)
     if not JOURNAL_FILE.exists():
         with JOURNAL_FILE.open("w", newline="") as fh:
@@ -89,7 +100,6 @@ def log_trade(order_info: dict) -> None:
 
     *order_info* is the dict returned by order_manager.place_order().
     """
-    ensure_journal()
 
     entry  = float(order_info.get("entry",  0))
     stop   = float(order_info.get("stop",   0))
@@ -126,8 +136,12 @@ def log_trade(order_info: dict) -> None:
         "reason":        str(order_info.get("reason", ""))[:300],
     }
 
-    with JOURNAL_FILE.open("a", newline="") as fh:
-        csv.DictWriter(fh, fieldnames=COLUMNS).writerow(row)
+    if _db:
+        _db.insert_trade(row)
+    else:
+        ensure_journal()
+        with JOURNAL_FILE.open("a", newline="") as fh:
+            csv.DictWriter(fh, fieldnames=COLUMNS).writerow(row)
 
     logger.info(
         f"Journal ▶ {row['symbol']} logged | "
@@ -148,6 +162,14 @@ def update_trade(
     If exit_price is provided but pnl_usd is not, compute realized P&L from
     the journal's entry_price and qty so the daily breaker has accurate data.
     """
+    if _db:
+        result = _db.update_trade(
+            order_id=order_id, status=status, exit_price=exit_price, pnl_usd=pnl_usd,
+            exit_order_id=exit_order_id, symbol=symbol,
+        )
+        if result and result[0]:
+            logger.info(f"Journal updated — order {order_id} → status={status} pnl={result[1]}")
+        return
     ensure_journal()
     try:
         df = pd.read_csv(JOURNAL_FILE, dtype=str)
@@ -210,6 +232,8 @@ def get_today_stats() -> dict:
       trades_today : int   — number of trade rows for today
       daily_pnl    : float — sum of closed P&L for today (negative = loss)
     """
+    if _db:
+        return _db.today_stats(date.today().strftime("%Y-%m-%d"))
     ensure_journal()
     try:
         df = pd.read_csv(JOURNAL_FILE, dtype=str)
@@ -243,6 +267,8 @@ def get_open_trade_symbols() -> list[str]:
     Return a list of symbols that have open/pending trades today.
     Used to prevent opening a second position in the same coin.
     """
+    if _db:
+        return _db.open_trade_symbols(date.today().strftime("%Y-%m-%d"))
     ensure_journal()
     open_statuses = {"new", "pending", "accepted", "partially_filled", "held", "filled"}
     try:
@@ -264,6 +290,8 @@ def get_open_trade(symbol: str) -> dict | None:
     Keys: order_id, side ("LONG"/"SHORT") and opened_at (UTC datetime or None),
     so callers can tell a real exit fill from an unrelated older order.
     """
+    if _db:
+        return _db.open_trade(symbol)
     ensure_journal()
     open_statuses = {"new", "pending", "accepted", "partially_filled", "held", "filled"}
     try:

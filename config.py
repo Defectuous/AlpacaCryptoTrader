@@ -21,6 +21,16 @@ BROKER: str = os.getenv("BROKER", "alpaca").strip().lower()
 ALPACA_API_KEY: str = os.getenv("ALPACA_API_KEY", "")
 ALPACA_SECRET_KEY: str = os.getenv("ALPACA_SECRET_KEY", "")
 ALPACA_PAPER: bool = os.getenv("ALPACA_PAPER", "true").lower() == "true"
+# ---------------------------------------------------------------------------
+# Trade journal database (MySQL / MariaDB; see trader/journal_db.py)
+# ---------------------------------------------------------------------------
+# Leave DB_HOST blank to keep the CSV journal in logs/trade_journal.csv.
+DB_HOST: str = os.getenv("DB_HOST", "").strip()
+DB_PORT: int = int(os.getenv("DB_PORT", "3306"))
+DB_USER: str = os.getenv("DB_USER", "").strip()
+DB_PASSWORD: str = os.getenv("DB_PASSWORD", "")
+DB_NAME: str = os.getenv("DB_NAME", "trading").strip()
+
 DISCORD_WEBHOOK_URL: str = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
 DISCORD_NOTIFICATIONS_ENABLED: bool = bool(DISCORD_WEBHOOK_URL)
 TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()

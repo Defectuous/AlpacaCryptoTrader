@@ -305,6 +305,21 @@ Every order is logged to `logs/trade_journal.csv` with:
 Review this after every session. After 20+ journaled trades you will have
 real data to evaluate your strategy.
 
+### MySQL / MariaDB journal
+
+Set `DB_HOST`, `DB_USER`, `DB_PASSWORD` and `DB_NAME` in `.env` to keep the
+journal in a `trades` table instead of the CSV. On first start the table is
+created and an existing `logs/trade_journal.csv` is imported (then renamed).
+Closed trades also record `closed_at`, the UTC time the exit was booked.
+
+Every write is a transaction, so a crash cannot corrupt the journal. If the
+database is down, writes queue in `logs/journal_spool.jsonl` and are replayed
+in order once it is back. Export to CSV with:
+
+```bash
+python -m trader.journal_db export trades.csv
+```
+
 ---
 
 ## No-Trade Rules (automated)
