@@ -10,6 +10,7 @@ layer and a Coinbase adapter in progress for long **and** short trading later.
 **Risk per trade:** 1% of equity (2% when volatility is high)  
 **Daily limits:** 5 entries; pause at a 3% daily loss (5% in high volatility)  
 **R:R:** minimum 1.5 to take a trade  
+**Exits:** protective stop, 4-hour trend flip, or a per-coin profit trail once a trade is up enough  
 **Platforms:** Windows, Linux, Raspberry Pi 5 (ARM64)
 
 ---
@@ -21,6 +22,8 @@ AlpacaCryptoTrader/
 ├── main.py                 ← run this
 ├── config.py               ← all tunable settings
 ├── backtest_runner.py      ← replay the strategy on historical bars
+├── calibrate_profit_targets.py ← build per-coin profit-trail settings from price history
+├── profit_targets.json     ← per-coin profit-trail settings (generated, not committed)
 ├── requirements.txt
 ├── .env.example            ← copy to .env and fill in your keys
 ├── brokers/                ← one adapter per exchange (see "Brokers" below)
@@ -42,11 +45,15 @@ AlpacaCryptoTrader/
 │   ├── indicators.py       ← EMA, RSI, ATR, VWAP, Bollinger, Stochastic RSI, 4h trend
 │   ├── risk_manager.py     ← position sizing, R:R validation, daily limits
 │   ├── order_manager.py    ← risk-sized entries with protective exits
-│   ├── journal.py          ← CSV trade journal in logs/
+│   ├── journal.py          ← trade journal (CSV in logs/, or MySQL / MariaDB)
+│   ├── journal_db.py       ← MySQL / MariaDB journal backend
+│   ├── profit_targets.py   ← reads per-coin profit-trail settings
 │   ├── discord_notifier.py ← Discord webhook alerts
 │   └── telegram_notifier.py← Telegram bot alerts
 └── logs/
-    ├── trade_journal.csv   ← auto-created on first trade
+    ├── trade_journal.csv   ← auto-created on first trade (CSV journal only)
+    ├── profit_trail.json   ← best price of each armed profit trail
+    ├── calibrate.log       ← output of scheduled calibration runs
     └── trader_YYYY-MM-DD.log
 ```
 
@@ -98,7 +105,8 @@ The variable names must match exactly (for example `ALPACA_SECRET_KEY`, not
 If you set `DISCORD_WEBHOOK_URL`, the bot posts alerts to Discord when:
 
 - an entry order is submitted
-- any order fills (entries, stop exits and trend-flip closes)
+- any order fills (entries, stop exits, trend-flip and profit-trail closes)
+- a position first reaches `PROFIT_ALERT_PCT` gain (see [Taking Profits](#taking-profits))
 
 Each alert includes what was bought or sold plus the same `Account: ...`
 summary line shown in the logs. Fills that already existed when the bot
@@ -145,8 +153,10 @@ restarts it.
 The default `4h_trend_momentum` mode trades BTC and ETH. It classifies the
 completed 4-hour trend from 20/50 EMAs, then requires hourly RSI momentum to
 agree before entry. Mixed 4-hour regimes do not open positions. A protective
-stop is placed as soon as the entry fills; there is no take-profit order, so
-the position stays open until the 4-hour trend changes or the stop is hit.
+stop is placed as soon as the entry fills. There is no fixed take-profit order:
+the position stays open until the 4-hour trend changes, the stop is hit, or
+the coin's profit trail sells it after a big gain turns down (see
+[Taking Profits](#taking-profits)).
 
 ```
 Trend            → 4-hour EMA20 above/below EMA50; insufficient separation is mixed
@@ -154,7 +164,8 @@ Momentum         → Hourly RSI >= 55 for longs or <= 45 for shorts
 No-trade filters → Mixed trend, insufficient liquidity, abnormal ATR, wide spread, excess slippage
 Entry            → Risk-sized limit order in the 4-hour trend direction
 Invalidation     → Stop beyond the recent 12-hour swing, buffered by 0.15%
-Exit             → Close when completed 4-hour trend changes, or when the protective stop is hit
+Exit             → Close when completed 4-hour trend changes, when the protective stop is hit,
+                   or when an armed profit trail is hit
 ```
 
 **Risk profiles.** Each signal is sized with one of two profiles, chosen by
@@ -189,7 +200,8 @@ stays in cash during downtrends.
 
 > "I entered in the direction of the completed 4-hour EMA trend after hourly
 > RSI confirmed momentum; I will hold until that trend changes, unless the
-> protective swing stop is hit first."
+> protective swing stop is hit first, or the trade gains enough to arm its
+> profit trail and then pulls back."
 
 ---
 
@@ -221,13 +233,16 @@ edited in `config.py`.
 | `MIN_POSITION_SIZE` / `MAX_POSITION_SIZE` | `$12` / `$300` | Notional clamp per order |
 | `MAX_DAILY_LOSS` | `$2.00` | Fallback dollar limit, only used if account value is unavailable |
 | `REWARD_RISK_MIN` | `1.5` | Minimum R:R to take a trade |
-| `REWARD_RISK_TARGET` | `2.1` | R:R used for take-profit calculation |
+| `REWARD_RISK_TARGET` | `2.1` | R:R for the projected target (logged only in trend mode, which places no take-profit order) |
 | `USE_LIMIT_ORDERS` | `True` | Limit entry (recommended); `False` → market |
 | `ENTRY_FILL_TIMEOUT_SECONDS` | `120` | Cancel the rest of a partly filled entry after this long so the filled part gets its stop (`.env`) |
 | `USE_CLOSED_CANDLE` | `True` | Evaluate signals on fully closed candles only |
 | `MAX_SPREAD_PCT` | `0.5` | Skip symbol if spread exceeds this % |
 | `MAX_SLIPPAGE_PCT` | `0.005` | Max estimated entry slippage; also the stop-limit buffer on Alpaca |
 | `MIN_LIQUIDITY_VOLUME_USD` | `50` | Minimum average bar volume in USD |
+| `PROFIT_ALERT_PCT` | `5` | Gain % that sends a one-time profit alert; `0` disables (`.env`) |
+| `PROFIT_TRAIL_ARM_PCT` / `PROFIT_TRAIL_PCT` | `10` / `2` | Default profit trail for coins not in `profit_targets.json`; arm `0` disables (`.env`) |
+| `PROFIT_TARGETS_FILE` | `profit_targets.json` | Per-coin profit-trail settings (`.env`) |
 | `BREAKOUT_*`, `SCALP_*`, `VWAP_*` | — | Parameters for the other strategy modes |
 
 Notification settings are configured from `.env`:
@@ -237,24 +252,83 @@ Notification settings are configured from `.env`:
 - `TELEGRAM_CHAT_ID`
 - `PROFIT_ALERT_PCT` (default `5`): alert once when a position is up this many
   percent at its sellable price (bid for longs, ask for shorts), checked every
-  60 seconds. Alert only; the bot's exits are unchanged. `0` disables.
-- `PROFIT_TRAIL_ARM_PCT` (default `10`) and `PROFIT_TRAIL_PCT` (default `2`):
-  once a position is up `PROFIT_TRAIL_ARM_PCT` percent at its sellable price,
-  the bot tracks its best price and sells at market when it falls
-  `PROFIT_TRAIL_PCT` percent from that best. Checked every 60 seconds; the
-  best price is kept in `logs/profit_trail.json` across restarts. The stop and
-  4-hour trend-flip exits still apply. These are the defaults for coins not
-  in `PROFIT_TARGETS_FILE`; `PROFIT_TRAIL_ARM_PCT=0` disables the default.
-- `PROFIT_TARGETS_FILE` (default `profit_targets.json`): per-coin arm and trail
-  percentages. Build it from each coin's price history with
-  `python calibrate_profit_targets.py` (`--symbols`, `--days`, `--dry-run`).
-  It sets `arm_pct` to the median best gain a coin reached within 7 days of a
-  random hour, and `trail_pct` to 3x its median hourly ATR (at most half of
-  `arm_pct`). Edit entries by hand and add `"locked": true` to keep them on a
-  rerun; `"arm_pct": 0` turns the trail off for that coin. Re-read every
-  check, so edits apply without a restart.
-  To refresh it weekly (Sundays at midnight), add a crontab line on the bot host
-  (`crontab -e`): `0 0 * * 0 cd ~/AlpacaCryptoTrader && .venv/bin/python calibrate_profit_targets.py >> logs/calibrate.log 2>&1`
+  60 seconds. Alert only; it does not sell. `0` disables.
+
+---
+
+## Taking Profits
+
+The trend strategy has no fixed take-profit, so on its own a winner is only
+sold when the 4-hour trend turns or the stop is hit, often after most of the
+gain is gone. The **profit trail** locks in big moves while still letting a
+strong trend run:
+
+1. Every 60 seconds the bot checks each open position at its sellable price
+   (bid for longs, ask for shorts).
+2. Once the gain reaches the coin's **arm %**, the trail arms and the bot starts
+   tracking the best price since then.
+3. When the price falls the coin's **trail %** from that best, the bot cancels
+   the protective stop and sells at market.
+
+The protective stop and the 4-hour trend-flip exit still apply until then, so
+whichever comes first closes the trade. The best price of each armed trail is
+kept in `logs/profit_trail.json`, so a restart doesn't lose it.
+
+Example (AAVE, arm 10 %, trail 3.5 %): bought at 164.79, the trail arms at
+181.27. If AAVE then peaks at 187.21, it sells once the bid drops to 180.66,
+about +9.6 %.
+
+### Per-coin settings
+
+Each coin gets its own arm and trail percentages in `profit_targets.json`
+(path set by `PROFIT_TARGETS_FILE`):
+
+```json
+{
+  "AAVE/USD": {"arm_pct": 10, "trail_pct": 3.5},
+  "BTC/USD":  {"arm_pct": 3.5, "trail_pct": 1.5}
+}
+```
+
+Coins not in the file use `PROFIT_TRAIL_ARM_PCT` / `PROFIT_TRAIL_PCT` from
+`.env` (defaults 10 % and 2 %). The bot re-reads the file on every check, so
+edits apply within a minute without a restart.
+
+- `"locked": true` keeps an entry's values when calibration reruns.
+- `"arm_pct": 0` turns the trail off for that coin.
+
+### Calibrating from price history
+
+`calibrate_profit_targets.py` builds the file from each coin's hourly history:
+
+- **arm %**: the median best gain the coin reached within 7 days of a random
+  hour, so price got there about half the time. Kept between 3 % (clears the
+  0.25 % per-fill fees) and 25 %.
+- **trail %**: 3 x the coin's median hourly ATR, so normal hourly swings rarely
+  trigger it. At least 1 % and at most half of arm %, so an armed trail always
+  keeps at least half of the arm gain.
+
+```bash
+python calibrate_profit_targets.py                         # SYMBOLS from .env
+python calibrate_profit_targets.py --symbols AAVE/USD BTC/USD
+python calibrate_profit_targets.py --symbols all --days 365
+python calibrate_profit_targets.py --dry-run               # print the table, don't write
+```
+
+It prints a table per coin (arm %, trail %, the gain still kept if it sells
+right after arming, and how often the arm gain was reached) and writes the
+file atomically, so the running bot never reads a half-written file.
+
+To recalibrate weekly (Sundays at midnight), add a crontab line on the bot host
+with `crontab -e`:
+
+```
+0 0 * * 0 cd ~/AlpacaCryptoTrader && .venv/bin/python calibrate_profit_targets.py >> logs/calibrate.log 2>&1
+```
+
+The cron job runs as your user, outside the service, so it can write
+`profit_targets.json` in the app folder even though the service itself can
+only write to `logs/`.
 
 ---
 
@@ -313,7 +387,7 @@ exchange fees or slippage, so live results will be somewhat worse.
 
 ## Trade Journal
 
-Every order is logged to `logs/trade_journal.csv` with:
+Every order is logged to `logs/trade_journal.csv` (or the database, see below) with:
 
 - Date, time (UTC), symbol, order ID
 - Entry, stop, and target prices
@@ -392,7 +466,8 @@ How the service behaves:
   open positions are left in place.
 - **Waits for the network** at boot before starting.
 - **Can only write to `logs/`**; the rest of the system is read-only to it.
-  Daily log files are still written to `logs/trader_YYYY-MM-DD.log`.
+  Daily log files are still written to `logs/trader_YYYY-MM-DD.log`. It reads
+  `profit_targets.json` but never writes it; the calibration cron job does.
 
 ---
 
