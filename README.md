@@ -238,6 +238,21 @@ Notification settings are configured from `.env`:
 - `PROFIT_ALERT_PCT` (default `5`): alert once when a position is up this many
   percent at its sellable price (bid for longs, ask for shorts), checked every
   60 seconds. Alert only; the bot's exits are unchanged. `0` disables.
+- `PROFIT_TRAIL_ARM_PCT` (default `10`) and `PROFIT_TRAIL_PCT` (default `2`):
+  once a position is up `PROFIT_TRAIL_ARM_PCT` percent at its sellable price,
+  the bot tracks its best price and sells at market when it falls
+  `PROFIT_TRAIL_PCT` percent from that best. Checked every 60 seconds; the
+  best price is kept in `logs/profit_trail.json` across restarts. The stop and
+  4-hour trend-flip exits still apply. These are the defaults for coins not
+  in `PROFIT_TARGETS_FILE`; `PROFIT_TRAIL_ARM_PCT=0` disables the default.
+- `PROFIT_TARGETS_FILE` (default `profit_targets.json`): per-coin arm and trail
+  percentages. Build it from each coin's price history with
+  `python calibrate_profit_targets.py` (`--symbols`, `--days`, `--dry-run`).
+  It sets `arm_pct` to the median best gain a coin reached within 7 days of a
+  random hour, and `trail_pct` to 3x its median hourly ATR (at most half of
+  `arm_pct`). Edit entries by hand and add `"locked": true` to keep them on a
+  rerun; `"arm_pct": 0` turns the trail off for that coin. Re-read every
+  check, so edits apply without a restart.
 
 ---
 

@@ -18,6 +18,8 @@ logs/trade_journal.csv.imported-*
 logs/journal_spool*.jsonl
 logs/discord_notified_orders.json
 logs/telegram_notified_orders.json
+logs/profit_trail.json
+profit_targets.json
 
 # Backtest outputs
 backtest/results/

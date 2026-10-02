@@ -9,10 +9,12 @@ Run:
 """
 from __future__ import annotations
 
+import json
 import os
 import signal
 import sys
 import time
+from pathlib import Path
 
 import pandas as pd
 from loguru import logger
@@ -54,6 +56,7 @@ from trader.order_manager import (
     get_open_positions,
     place_order,
 )
+from trader.profit_targets import load_targets, trail_settings
 from trader.risk_manager import (
     HIGH_RISK_PROFILE,
     STANDARD_PROFILE,
@@ -233,6 +236,28 @@ def _ensure_protection() -> None:
         logger.error(f"Protective-exit check failed: {exc}")
 
 
+def _sellable_gain(symbol: str, position) -> tuple[float, float] | None:
+    """
+    Return (price, gain %) at the price a close would get now, or None.
+
+    Uses the bid for longs and the ask for shorts, not the last-trade mark.
+    """
+    if position.avg_entry <= 0 or position.qty <= 0:
+        return None
+    quote_symbol = symbol if "/" in symbol or not symbol.endswith("USD") else f"{symbol[:-3]}/USD"
+    try:
+        quote = get_broker().get_latest_quote(quote_symbol)
+    except Exception as exc:
+        logger.warning(f"{symbol}: Sellable price quote failed: {exc}")
+        return None
+    is_long = position.side == "long"
+    price = quote["bid"] if is_long else quote["ask"]
+    if price <= 0:
+        return None
+    move = price - position.avg_entry if is_long else position.avg_entry - price
+    return price, move / position.avg_entry * 100.0
+
+
 def _check_profit_alerts() -> None:
     """
     Alert once per position when its sellable price is PROFIT_ALERT_PCT past entry.
@@ -252,22 +277,14 @@ def _check_profit_alerts() -> None:
         key = f"profit-alert:{symbol.replace('/', '')}:{position.avg_entry:.10g}"
         if discord_has_been_notified(key) or telegram_has_been_notified(key):
             continue
-        if position.avg_entry <= 0 or position.qty <= 0:
+        sellable = _sellable_gain(symbol, position)
+        if sellable is None:
             continue
-        quote_symbol = symbol if "/" in symbol or not symbol.endswith("USD") else f"{symbol[:-3]}/USD"
-        try:
-            quote = get_broker().get_latest_quote(quote_symbol)
-        except Exception as exc:
-            logger.warning(f"{symbol}: Profit alert quote failed: {exc}")
-            continue
-        is_long = position.side == "long"
-        price = quote["bid"] if is_long else quote["ask"]
-        if price <= 0:
-            continue
-        move = price - position.avg_entry if is_long else position.avg_entry - price
-        gain_pct = move / position.avg_entry * 100.0
+        price, gain_pct = sellable
         if gain_pct < config.PROFIT_ALERT_PCT:
             continue
+        is_long = position.side == "long"
+        move = price - position.avg_entry if is_long else position.avg_entry - price
         alert = {
             "symbol": symbol,
             "side": position.side,
@@ -288,6 +305,91 @@ def _check_profit_alerts() -> None:
         if sent or not notifiers:
             discord_mark_notified(key)
             telegram_mark_notified(key)
+
+
+_PROFIT_TRAIL_FILE = Path("logs") / "profit_trail.json"
+
+
+def _load_trail_peaks() -> dict[str, float]:
+    try:
+        if _PROFIT_TRAIL_FILE.exists():
+            return {k: float(v) for k, v in json.loads(_PROFIT_TRAIL_FILE.read_text(encoding="utf-8")).items()}
+    except Exception as exc:
+        logger.warning(f"Could not read profit trail file: {exc}")
+    return {}
+
+
+def _save_trail_peaks(peaks: dict[str, float]) -> None:
+    try:
+        _PROFIT_TRAIL_FILE.parent.mkdir(exist_ok=True)
+        _PROFIT_TRAIL_FILE.write_text(json.dumps(peaks), encoding="utf-8")
+    except Exception as exc:
+        logger.warning(f"Could not persist profit trail: {exc}")
+
+
+def _run_profit_trail() -> None:
+    """
+    Sell a winner once it turns down after reaching its arm level.
+
+    From the first check at or past the coin's arm %, track the best sellable
+    price and close at market when the price gives back the coin's trail %
+    from it. Both come from profit_targets.json, else the .env defaults. Best
+    prices are keyed by symbol and average entry and saved to disk, so a
+    restart keeps an armed trail and a new position starts fresh.
+    """
+    try:
+        positions = get_broker().get_positions()
+    except Exception as exc:
+        logger.error(f"Profit trail check failed: {exc}")
+        return
+    targets = load_targets()
+    peaks = _load_trail_peaks()
+    live_keys: set[str] = set()
+    changed = False
+    for symbol, position in positions.items():
+        arm_pct, trail_pct = trail_settings(symbol, targets)
+        if arm_pct <= 0 or trail_pct <= 0:
+            continue
+        key = f"{symbol.replace('/', '')}:{position.avg_entry:.10g}"
+        live_keys.add(key)
+        sellable = _sellable_gain(symbol, position)
+        if sellable is None:
+            continue
+        price, gain_pct = sellable
+        is_long = position.side == "long"
+        best = peaks.get(key)
+        if best is None:
+            if gain_pct < arm_pct:
+                continue
+            logger.success(
+                f"PROFIT TRAIL armed ▶ {symbol} {gain_pct:+.2f}% | entry={position.avg_entry:.8g} "
+                f"price={price:.8g}; selling on a {trail_pct:g}% pullback from the best"
+            )
+            best = price
+        best = max(best, price) if is_long else min(best, price)
+        if peaks.get(key) != best:
+            peaks[key] = best
+            changed = True
+        trigger = (
+            best * (1 - trail_pct / 100.0)
+            if is_long
+            else best * (1 + trail_pct / 100.0)
+        )
+        if (price > trigger) if is_long else (price < trigger):
+            continue
+        logger.warning(
+            f"PROFIT TRAIL hit ▶ {symbol} {gain_pct:+.2f}% | best={best:.8g} price={price:.8g} "
+            f"trigger={trigger:.8g}; closing position"
+        )
+        order = close_position(symbol)
+        if order is not None:
+            logger.success(f"{symbol}: Profit-trail close submitted — id={order.id}")
+            # Leave the peak until the position is gone, so a failed fill retries.
+    for key in [k for k in peaks if k not in live_keys]:
+        del peaks[key]
+        changed = True
+    if changed:
+        _save_trail_peaks(peaks)
 
 
 def log_position_summary() -> None:
@@ -786,6 +888,7 @@ def main() -> None:
             # is resolved within ENTRY_FILL_TIMEOUT_SECONDS, not at the next bar.
             if time.monotonic() >= next_protection_check:
                 _ensure_protection()
+                _run_profit_trail()
                 _check_profit_alerts()
                 next_protection_check = time.monotonic() + _PROTECTION_CHECK_SECONDS
             # A dead stream thread would leave the bot idle forever; exit non-zero

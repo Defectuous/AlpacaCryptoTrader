@@ -39,6 +39,14 @@ TELEGRAM_NOTIFICATIONS_ENABLED: bool = bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT
 # Alert once when a position's sellable price (bid for longs) is this many
 # percent past its entry. Alert only; exits are unchanged. 0 disables.
 PROFIT_ALERT_PCT: float = float(os.getenv("PROFIT_ALERT_PCT", "5"))
+# Profit trail: once a position's sellable price is PROFIT_TRAIL_ARM_PCT past
+# entry, track its best price and sell at market when it gives back
+# PROFIT_TRAIL_PCT from that best. The stop and trend-flip exits still apply.
+# Per-coin values in PROFIT_TARGETS_FILE (see calibrate_profit_targets.py)
+# override these defaults. PROFIT_TRAIL_ARM_PCT=0 disables the default.
+PROFIT_TRAIL_ARM_PCT: float = float(os.getenv("PROFIT_TRAIL_ARM_PCT", "10"))
+PROFIT_TRAIL_PCT: float = float(os.getenv("PROFIT_TRAIL_PCT", "2"))
+PROFIT_TARGETS_FILE: str = os.getenv("PROFIT_TARGETS_FILE", "profit_targets.json")
 
 # ---------------------------------------------------------------------------
 # Symbols to watch
