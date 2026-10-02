@@ -43,8 +43,11 @@ def load_targets() -> dict[str, dict]:
 
 
 def save_targets(targets: dict[str, dict]) -> None:
+    # Write then rename, so the bot's once-a-minute read never sees a half-written file.
     path = _path()
-    path.write_text(json.dumps(targets, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(targets, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    tmp.replace(path)
 
 
 def trail_settings(symbol: str, targets: dict[str, dict] | None = None) -> tuple[float, float]:

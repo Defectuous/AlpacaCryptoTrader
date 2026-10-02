@@ -253,6 +253,8 @@ Notification settings are configured from `.env`:
   `arm_pct`). Edit entries by hand and add `"locked": true` to keep them on a
   rerun; `"arm_pct": 0` turns the trail off for that coin. Re-read every
   check, so edits apply without a restart.
+  To refresh it nightly, add a crontab line on the bot host (`crontab -e`):
+  `0 0 * * * cd ~/AlpacaCryptoTrader && .venv/bin/python calibrate_profit_targets.py >> logs/calibrate.log 2>&1`
 
 ---
 
