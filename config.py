@@ -30,6 +30,9 @@ DB_PORT: int = int(os.getenv("DB_PORT", "3306"))
 DB_USER: str = os.getenv("DB_USER", "").strip()
 DB_PASSWORD: str = os.getenv("DB_PASSWORD", "")
 DB_NAME: str = os.getenv("DB_NAME", "trading").strip()
+# Fee % charged on each fill, used for the journal's estimated fees and net P&L
+# (Alpaca crypto: 0.25 % taker at the lowest volume tier).
+TRADE_FEE_PCT: float = float(os.getenv("TRADE_FEE_PCT", "0.25"))
 
 DISCORD_WEBHOOK_URL: str = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
 DISCORD_NOTIFICATIONS_ENABLED: bool = bool(DISCORD_WEBHOOK_URL)
@@ -47,7 +50,7 @@ PROFIT_ALERT_PCT: float = float(os.getenv("PROFIT_ALERT_PCT", "5"))
 PROFIT_TRAIL_ARM_PCT: float = float(os.getenv("PROFIT_TRAIL_ARM_PCT", "7.1"))
 PROFIT_TRAIL_PCT: float = float(os.getenv("PROFIT_TRAIL_PCT", "2"))
 # Calibration: arm % = round-trip fees + this fraction of a coin's median best
-# 7-day gain, raised so arm % - trail % still covers the fees.
+# 7-day gain; the trail is cut so arm % - trail % still covers the fees.
 PROFIT_TRAIL_FEE_PCT: float = float(os.getenv("PROFIT_TRAIL_FEE_PCT", "0.5"))
 PROFIT_TRAIL_ARM_FRACTION: float = float(os.getenv("PROFIT_TRAIL_ARM_FRACTION", "0.66"))
 PROFIT_TARGETS_FILE: str = os.getenv("PROFIT_TARGETS_FILE", "profit_targets.json")

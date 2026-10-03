@@ -218,6 +218,56 @@ def update_trade(
 
 
 # ---------------------------------------------------------------------------
+# Order ledger (MySQL / MariaDB only)
+# ---------------------------------------------------------------------------
+
+def tracks_orders() -> bool:
+    """True when every broker order is mirrored and trade exits come from real fills."""
+    return _db is not None
+
+
+def _utc_text(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    if value.tzinfo is not None:
+        value = value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value.strftime("%Y-%m-%d %H:%M:%S.%f")
+
+
+def _order_row(order) -> dict:
+    return {
+        "id": order.id,
+        "client_order_id": order.client_order_id or None,
+        "symbol": order.symbol,
+        "side": order.side,
+        "order_type": order.order_type or None,
+        "role": order.role or "other",
+        "qty": order.qty,
+        "filled_qty": order.filled_qty,
+        "filled_avg_price": order.filled_avg_price,
+        "limit_price": order.limit_price,
+        "stop_price": order.stop_price,
+        "status": order.status,
+        "submitted_at": _utc_text(order.submitted_at),
+        "filled_at": _utc_text(order.filled_at),
+        "updated_at": _utc_text(order.updated_at),
+        "seen_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+
+def record_orders(orders: list) -> None:
+    """Mirror broker orders into the orders table and refresh the trades they belong to."""
+    if _db:
+        _db.record_orders([_order_row(o) for o in orders])
+
+
+def note_exit(order, reason: str) -> None:
+    """Record that the bot closed a position with *order*, and why (e.g. "profit_trail")."""
+    if _db and order is not None:
+        _db.note_exit(_order_row(order), reason)
+
+
+# ---------------------------------------------------------------------------
 # Query helpers
 # ---------------------------------------------------------------------------
 

@@ -213,6 +213,7 @@ class AlpacaBroker(Broker):
 
     # ---- Orders -----------------------------------------------------------------
     def _order(self, raw: Any) -> Order:
+        client_id = str(raw.client_order_id or "")
         return Order(
             id=str(raw.id),
             symbol=self._bot_symbol(str(raw.symbol)),
@@ -222,10 +223,19 @@ class AlpacaBroker(Broker):
             filled_qty=float(raw.filled_qty or 0),
             filled_avg_price=_float(raw.filled_avg_price),
             order_type=_enum_str(raw.order_type),
-            client_order_id=str(raw.client_order_id or ""),
+            client_order_id=client_id,
             legs=[self._order(leg) for leg in (getattr(raw, "legs", None) or [])],
             submitted_at=raw.submitted_at,
             raw=raw,
+            limit_price=_float(getattr(raw, "limit_price", None)),
+            stop_price=_float(getattr(raw, "stop_price", None)),
+            filled_at=getattr(raw, "filled_at", None),
+            updated_at=getattr(raw, "updated_at", None),
+            role=(
+                "entry" if client_id.startswith(ENTRY_TAG)
+                else "stop" if client_id.startswith(EXIT_TAG)
+                else ""
+            ),
         )
 
     def get_open_orders(self, symbol: str | None = None, nested: bool = False) -> list[Order]:
@@ -396,7 +406,8 @@ class AlpacaBroker(Broker):
         if target_hit or (stop_breached and not current):
             reason = "take-profit reached" if target_hit else "stop breached while unprotected"
             logger.warning(f"{symbol}: {reason} (price={price:.8f}); closing position")
-            self.close_position(symbol)
+            order = self.close_position(symbol)
+            self._exit_submitted(order, "take_profit" if target_hit else "stop_breached")
             return
 
         if current and all(

@@ -16,6 +16,7 @@ from loguru import logger
 import config
 from brokers import get_broker
 from brokers.base import Order, OrderRequest
+from trader.journal import note_exit
 from trader.risk_manager import RiskProfile, calculate_position_qty
 from trader.strategy import TradeSignal
 
@@ -374,10 +375,15 @@ def cancel_order(order: Order) -> bool:
         return False
 
 
-def close_position(symbol: str) -> Order | None:
-    """Flatten the position in *symbol* at market."""
+def close_position(symbol: str, reason: str) -> Order | None:
+    """Flatten the position in *symbol* at market; *reason* is journaled with the order."""
     try:
-        return get_broker().close_position(symbol)
+        order = get_broker().close_position(symbol)
     except Exception as exc:
         logger.error(f"{symbol}: Close position failed — {exc}")
         return None
+    try:
+        note_exit(order, reason)
+    except Exception as exc:
+        logger.error(f"{symbol}: Recording exit reason failed: {exc}")
+    return order

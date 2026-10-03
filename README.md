@@ -23,6 +23,7 @@ AlpacaCryptoTrader/
 ├── config.py               ← all tunable settings
 ├── backtest_runner.py      ← replay the strategy on historical bars
 ├── calibrate_profit_targets.py ← build per-coin profit-trail settings from price history
+├── trades_report.py        ← open trades, working orders and closed trades (database journal)
 ├── profit_targets.json     ← per-coin profit-trail settings (generated, not committed)
 ├── requirements.txt
 ├── .env.example            ← copy to .env and fill in your keys
@@ -244,6 +245,7 @@ edited in `config.py`.
 | `PROFIT_TRAIL_ARM_PCT` / `PROFIT_TRAIL_PCT` | `7.1` / `2` | Default profit trail for coins not in `profit_targets.json`; arm `0` disables (`.env`) |
 | `PROFIT_TARGETS_FILE` | `profit_targets.json` | Per-coin profit-trail settings (`.env`) |
 | `PROFIT_TRAIL_FEE_PCT` / `PROFIT_TRAIL_ARM_FRACTION` | `0.5` / `0.66` | Calibration: arm % = fees + fraction x median best gain (`.env`) |
+| `TRADE_FEE_PCT` | `0.25` | Fee % per fill for the journal's estimated fees and net P&L (`.env`) |
 | `BREAKOUT_*`, `SCALP_*`, `VWAP_*` | — | Parameters for the other strategy modes |
 
 Notification settings are configured from `.env`:
@@ -415,6 +417,44 @@ in order once it is back. Export to CSV with:
 ```bash
 python -m trader.journal_db export trades.csv
 ```
+
+#### Order ledger
+
+With the database journal, the bot also mirrors every broker order into an
+`orders` table: entries, protective stop-limits, the bot's own closes, and
+orders placed by hand. It updates the table on every order update from the
+broker and on startup, writing only orders that changed. Each order records
+its type, role, quantities, stop/limit prices, fill price, status and
+timestamps, and is linked to the trade it belongs to.
+
+| Role | Meaning |
+|---|---|
+| `entry` | A bot entry (starts a trade once it fills) |
+| `stop` | A protective stop-limit the bot placed |
+| `close` | A market close by the bot; `reason` says why: `profit_trail`, `trend_flip`, `take_profit`, `stop_breached` |
+| `other` | Not placed by the bot (manual), or a close from before the ledger existed |
+
+From those orders each `trades` row gets the real numbers:
+
+- `entry_fill_price` / `entry_fill_qty`: what actually filled, not the planned entry
+- `current_stop`: the stop working right now (NULL = the position is unprotected)
+- `exit_price` / `exit_qty`: average of the exit fills; `exit_reason`: `stop`,
+  a close reason above, or `manual`
+- `fees_usd`: estimated at `TRADE_FEE_PCT` (default 0.25 %) per fill
+- `pnl_usd`: net of those fees; the daily loss limit uses it
+
+To see everything at once, run on the bot's host:
+
+```bash
+python trades_report.py               # open trades, working orders, closed trades (7 days)
+python trades_report.py --days 0      # every closed trade
+python trades_report.py --offline     # without live quotes
+```
+
+It lists open trades with their entry fill, working stop and unrealized P&L
+at the bid, every working order, and closed trades with how they exited,
+fees and net P&L. It reads the database, so it works while the broker is
+unreachable (live quotes are then left out).
 
 ---
 

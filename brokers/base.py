@@ -15,6 +15,7 @@ from datetime import datetime
 from typing import Any, Literal
 
 import pandas as pd
+from loguru import logger
 
 OrderSideStr = Literal["buy", "sell"]
 PositionSideStr = Literal["long", "short"]
@@ -79,6 +80,13 @@ class Order:
     legs: list[Order] = field(default_factory=list)
     submitted_at: datetime | None = None
     raw: Any = field(default=None, repr=False)
+    limit_price: float | None = None
+    stop_price: float | None = None
+    filled_at: datetime | None = None
+    updated_at: datetime | None = None
+    # "entry" / "stop" when the broker can tell it placed the order for the
+    # bot; "" otherwise (a bot close or a manual order).
+    role: str = ""
 
 
 @dataclass
@@ -119,6 +127,19 @@ class Broker(ABC):
 
     #: Short name used in config and logs, e.g. "alpaca".
     name: str = ""
+
+    #: Called with (order, reason) when the broker closes a position on its own
+    #: (take-profit reached, stop breached while unprotected), so the journal
+    #: can record why. Set by the bot at startup.
+    exit_listener: Callable[[Order, str], None] | None = None
+
+    def _exit_submitted(self, order: Order, reason: str) -> None:
+        if self.exit_listener is None:
+            return
+        try:
+            self.exit_listener(order, reason)
+        except Exception as exc:    # bookkeeping must never block an exit
+            logger.error(f"{order.symbol}: Recording exit reason failed: {exc}")
 
     # ---- Capabilities -------------------------------------------------------
     @property

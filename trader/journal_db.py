@@ -12,6 +12,11 @@ same empty defaults the CSV journal does.
 On first connection the table is created, and an existing
 logs/trade_journal.csv is imported (then renamed) when the table is empty.
 
+The `orders` table mirrors every broker order (entries, protective stops,
+closes, manual orders) and is refreshed whenever the bot reconciles with the
+broker. Each order is linked to the trade it belongs to, and the trade row is
+then updated from real fills: entry fill, current stop, exit, fees and P&L.
+
 Export to CSV:  python -m trader.journal_db export [path]
 """
 from __future__ import annotations
@@ -32,6 +37,7 @@ from loguru import logger
 import config
 
 TABLE = "trades"
+ORDERS = "orders"
 LOG_DIR = Path("logs")
 CSV_FILE = LOG_DIR / "trade_journal.csv"
 SPOOL_FILE = LOG_DIR / "journal_spool.jsonl"
@@ -39,6 +45,19 @@ BAD_SPOOL_FILE = LOG_DIR / "journal_spool.failed.jsonl"
 
 OPEN_STATUSES = ("new", "pending", "accepted", "partially_filled", "held", "filled")
 _OPEN_IN = ", ".join(["%s"] * len(OPEN_STATUSES))
+
+# Broker statuses after which an order can no longer fill.
+DONE_STATUSES = ("filled", "canceled", "expired", "rejected", "replaced", "done_for_day", "stopped")
+
+# Columns added to `trades` after it was first released; filled from the orders table.
+_ADDED_TRADE_COLUMNS = {
+    "entry_fill_price": "DECIMAL(28,12) NULL",     # average entry fill
+    "entry_fill_qty":   "DECIMAL(28,10) NULL",
+    "current_stop":     "DECIMAL(28,12) NULL",     # working protective stop, NULL if none
+    "exit_qty":         "DECIMAL(28,10) NULL",
+    "exit_reason":      "VARCHAR(24) NULL",        # stop, profit_trail, trend_flip, manual, ...
+    "fees_usd":         "DECIMAL(18,4) NULL",      # estimated at TRADE_FEE_PCT per fill
+}
 
 # Server errors worth retrying: too many connections, access denied, shutting
 # down, lock wait timeout, deadlock. Codes 2000+ are client-side connection errors.
@@ -79,6 +98,34 @@ def _schema() -> str:
         KEY `ix_exit_order_id` (`exit_order_id`),
         KEY `ix_symbol_status` (`symbol`, `status`),
         KEY `ix_date` (`date`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    """
+
+
+def _orders_schema() -> str:
+    return f"""
+    CREATE TABLE IF NOT EXISTS `{ORDERS}` (
+        `id`               VARCHAR(64)    NOT NULL PRIMARY KEY,   -- broker order id
+        `client_order_id`  VARCHAR(128)   NULL,
+        `symbol`           VARCHAR(32)    NOT NULL,
+        `side`             VARCHAR(8)     NOT NULL,
+        `order_type`       VARCHAR(24)    NULL,
+        `role`             VARCHAR(16)    NOT NULL,  -- entry, stop, close (by the bot), other
+        `reason`           VARCHAR(24)    NULL,      -- why the bot closed: profit_trail, ...
+        `trade_order_id`   VARCHAR(64)    NULL,      -- entry order of the trade it belongs to
+        `qty`              DECIMAL(28,10) NULL,
+        `filled_qty`       DECIMAL(28,10) NULL,
+        `filled_avg_price` DECIMAL(28,12) NULL,
+        `limit_price`      DECIMAL(28,12) NULL,
+        `stop_price`       DECIMAL(28,12) NULL,
+        `status`           VARCHAR(24)    NOT NULL,
+        `submitted_at`     DATETIME(6)    NULL,      -- UTC
+        `filled_at`        DATETIME(6)    NULL,
+        `updated_at`       DATETIME(6)    NULL,
+        `seen_at`          DATETIME       NOT NULL,  -- UTC time the bot last recorded a change
+        KEY `ix_symbol_submitted` (`symbol`, `submitted_at`),
+        KEY `ix_trade` (`trade_order_id`),
+        KEY `ix_status` (`status`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     """
 
@@ -135,6 +182,8 @@ def _prepare(conn: pymysql.connections.Connection) -> None:
         if not _ready:
             with conn.cursor() as cur:
                 cur.execute(_schema())
+                _add_trade_columns(cur)
+                cur.execute(_orders_schema())
                 cur.execute(f"SELECT COUNT(*) FROM `{TABLE}`")
                 if cur.fetchone()[0] == 0:
                     _import_csv(cur)
@@ -142,6 +191,19 @@ def _prepare(conn: pymysql.connections.Connection) -> None:
             _ready = True
         if SPOOL_FILE.exists():
             _replay_spool(conn)
+
+
+def _add_trade_columns(cur: pymysql.cursors.Cursor) -> None:
+    cur.execute(
+        "SELECT COLUMN_NAME FROM information_schema.COLUMNS "
+        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s",
+        (TABLE,),
+    )
+    present = {r[0] for r in cur.fetchall()}
+    for name, ddl in _ADDED_TRADE_COLUMNS.items():
+        if name not in present:
+            cur.execute(f"ALTER TABLE `{TABLE}` ADD COLUMN `{name}` {ddl}")
+            logger.info(f"Journal: added column {TABLE}.{name}")
 
 
 # ---------------------------------------------------------------------------
@@ -271,7 +333,117 @@ def _update(
     return len(ids), pnl_usd
 
 
-_OPS = {"insert": _insert, "update": _update}
+# ---------------------------------------------------------------------------
+# Order ledger
+# ---------------------------------------------------------------------------
+
+_ORDER_COLUMNS = (
+    "id", "client_order_id", "symbol", "side", "order_type", "role", "qty", "filled_qty",
+    "filled_avg_price", "limit_price", "stop_price", "status", "submitted_at", "filled_at",
+    "updated_at", "seen_at",
+)
+
+
+def _upsert_orders(cur: pymysql.cursors.Cursor, orders: list[dict], reason: str | None = None) -> None:
+    """Insert or refresh order rows, then re-link and refresh the trades of their symbols.
+
+    A "close" the bot recorded keeps its role and reason when a later sync
+    sees the same order as an untagged "other" one. With *reason* set, the
+    orders are bot closes and their role and reason are overwritten.
+    """
+    columns = ", ".join(f"`{c}`" for c in _ORDER_COLUMNS)
+    marks = ", ".join(["%s"] * len(_ORDER_COLUMNS))
+    refresh = ", ".join(
+        f"`{c}` = VALUES(`{c}`)" for c in _ORDER_COLUMNS if c not in ("id", "role")
+    )
+    role_sql = (
+        "`role` = 'close'" if reason
+        else "`role` = IF(VALUES(`role`) = 'other', `role`, VALUES(`role`))"
+    )
+    for order in orders:
+        row = dict(order, role="close" if reason else order["role"])
+        cur.execute(
+            f"INSERT INTO `{ORDERS}` ({columns}) VALUES ({marks}) "
+            f"ON DUPLICATE KEY UPDATE {refresh}, {role_sql}",
+            [row[c] for c in _ORDER_COLUMNS],
+        )
+        if reason:
+            cur.execute(f"UPDATE `{ORDERS}` SET `reason` = %s WHERE `id` = %s", (reason, row["id"]))
+    for symbol in sorted({o["symbol"] for o in orders}):
+        _refresh_symbol(cur, symbol)
+
+
+def _refresh_symbol(cur: pymysql.cursors.Cursor, symbol: str) -> None:
+    """Link each of *symbol*'s orders to its trade, then update those trades from the fills.
+
+    A trade is a filled bot entry; every later non-entry order in the symbol,
+    up to the next filled entry, belongs to it. Exit fields are only written
+    when exit fills are known, so a trade whose exit is older than the
+    broker's order history keeps what the journal already had.
+    """
+    cur.execute(
+        f"""SELECT `id`, `role`, `reason`, `side`, `filled_qty`, `filled_avg_price`, `stop_price`,
+                   `status`, `filled_at`, `trade_order_id`
+            FROM `{ORDERS}` WHERE `symbol` = %s ORDER BY `submitted_at`, `id`""",
+        (symbol,),
+    )
+    trades: dict[str, dict] = {}
+    current: dict | None = None
+    for (order_id, role, reason, side, filled_qty, price, stop_price,
+         status, filled_at, linked) in cur.fetchall():
+        filled = float(filled_qty or 0)
+        if role == "entry":
+            trade_id = order_id     # an entry that never filled is its own empty trade
+            if filled > 0 and price is not None:
+                current = {
+                    "id": order_id, "side": side, "entry_qty": filled,
+                    "entry_price": float(price), "exits": [], "stop": None,
+                }
+                trades[order_id] = current
+        elif current is None:
+            trade_id = None         # before any bot entry in this symbol
+        else:
+            trade_id = current["id"]
+            if side != current["side"] and filled > 0 and price is not None:
+                label = "stop" if role == "stop" else (reason or "manual")
+                current["exits"].append((filled, float(price), filled_at, order_id, label))
+            if role == "stop" and status not in DONE_STATUSES:
+                current["stop"] = stop_price
+        if trade_id != linked:
+            cur.execute(f"UPDATE `{ORDERS}` SET `trade_order_id` = %s WHERE `id` = %s", (trade_id, order_id))
+
+    fee = config.TRADE_FEE_PCT / 100.0
+    for trade in trades.values():
+        sets: dict[str, Any] = {
+            "entry_fill_price": trade["entry_price"],
+            "entry_fill_qty": trade["entry_qty"],
+            "current_stop": trade["stop"],
+        }
+        if trade["exits"]:
+            exits = sorted(trade["exits"], key=lambda e: e[2] or datetime.min)
+            qty = sum(e[0] for e in exits)
+            exit_price = sum(e[0] * e[1] for e in exits) / qty
+            entry_price = trade["entry_price"]
+            move = entry_price - exit_price if trade["side"] == "sell" else exit_price - entry_price
+            fees = fee * (entry_price + exit_price) * qty
+            _, _, closed_at, exit_order_id, exit_reason = exits[-1]
+            sets.update({
+                "exit_price": round(exit_price, 12),
+                "exit_qty": qty,
+                "exit_order_id": exit_order_id,
+                "exit_reason": exit_reason,
+                "closed_at": closed_at,
+                "fees_usd": round(fees, 4),
+                "pnl_usd": round(move * qty - fees, 4),
+            })
+        assignments = ", ".join(f"`{c}` = %s" for c in sets)
+        cur.execute(
+            f"UPDATE `{TABLE}` SET {assignments} WHERE `order_id` = %s",
+            [*sets.values(), trade["id"]],
+        )
+
+
+_OPS = {"insert": _insert, "update": _update, "orders": _upsert_orders}
 
 
 def ensure() -> None:
@@ -286,6 +458,17 @@ def ensure() -> None:
 
 def insert_trade(row: dict) -> None:
     _write("insert", {"row": row})
+
+
+def record_orders(orders: list[dict]) -> None:
+    """Mirror broker orders (dicts of the orders-table columns) and refresh their trades."""
+    if orders:
+        _write("orders", {"orders": orders})
+
+
+def note_exit(order: dict, reason: str) -> None:
+    """Record that the bot itself submitted *order* to close a position, and why."""
+    _write("orders", {"orders": [order], "reason": reason})
 
 
 def update_trade(**kwargs: Any) -> tuple[int, float | None] | None:

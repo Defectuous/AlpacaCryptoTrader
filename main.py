@@ -45,6 +45,9 @@ from trader.journal import (
     get_open_trade,
     get_today_stats,
     log_trade,
+    note_exit,
+    record_orders,
+    tracks_orders,
     update_trade,
 )
 from trader.order_manager import (
@@ -118,6 +121,14 @@ def _build_account_line() -> str:
 # False until the first sync has recorded the fills that existed at startup.
 _fill_baseline_done = False
 _logged_fill_ids: set[str] = set()
+# order id -> _order_version() at the last sync; empty at startup, so the
+# first sync re-records every order the broker returns.
+_order_versions: dict[str, tuple] = {}
+
+
+def _order_version(order) -> tuple:
+    return (order.status, order.filled_qty, order.filled_avg_price, order.updated_at)
+
 
 def _is_exit_fill(order, open_trade: dict) -> bool:
     """True when a filled standalone order closes the journal's open trade.
@@ -138,21 +149,37 @@ def _is_exit_fill(order, open_trade: dict) -> bool:
 
 def sync_open_positions_to_journal() -> None:
     """
-    Cross-reference the broker's closed orders against the journal and
-    update any rows whose status has changed.
+    Cross-reference the broker's orders against the journal and update any
+    rows whose status has changed.
 
     Strategy:
-      - Fetch all orders that are NOT open (i.e., filled, cancelled, expired).
+      - Fetch all orders that are NOT open (i.e., filled, cancelled, expired),
+        plus the open ones when the order ledger is on (MySQL journal).
+      - Skip orders unchanged since the last sync.
+      - With the ledger, mirror every changed order into it; it links each to
+        its trade and books exits and P&L from the real fills.
       - For each journal order_id, if the broker reports it filled/cancelled, update.
     """
     global _fill_baseline_done
     try:
-        closed_orders = get_broker().get_closed_orders(limit=500)
+        broker = get_broker()
+        closed_orders = broker.get_closed_orders(limit=500)
+        ledger = tracks_orders()
+        open_orders = broker.get_open_orders(nested=True) if ledger else []
+        closed_ids = {o.id for o in closed_orders} | {leg.id for o in closed_orders for leg in o.legs}
 
         orders_to_sync = []
-        for parent_order in closed_orders:
+        for parent_order in [*closed_orders, *open_orders]:
             orders_to_sync.append((parent_order, None))
             orders_to_sync.extend((leg, parent_order.id) for leg in parent_order.legs)
+
+        # Only orders that changed since the last sync need any work.
+        orders_to_sync = [
+            (order, parent_id) for order, parent_id in orders_to_sync
+            if _order_versions.get(order.id) != _order_version(order)
+        ]
+        if ledger:
+            record_orders([order for order, _ in orders_to_sync])
 
         for order, parent_order_id in orders_to_sync:
             order_id = order.id
@@ -174,7 +201,11 @@ def sync_open_positions_to_journal() -> None:
                 )
 
             # Entry fills are not realized exits; child fills link P&L to the parent row.
-            if parent_order_id:
+            # With the order ledger, exits and P&L come from record_orders() instead.
+            if ledger:
+                if order_id in closed_ids:  # open orders only feed the ledger
+                    update_trade(journal_order_id, status)
+            elif parent_order_id:
                 update_trade(
                     journal_order_id,
                     status,
@@ -216,6 +247,8 @@ def sync_open_positions_to_journal() -> None:
                         send(order, account_line)
                 for _, _, mark in pending:
                     mark(order_id)
+
+            _order_versions[order_id] = _order_version(order)
 
         _fill_baseline_done = True
 
@@ -381,7 +414,7 @@ def _run_profit_trail() -> None:
             f"PROFIT TRAIL hit ▶ {symbol} {gain_pct:+.2f}% | best={best:.8g} price={price:.8g} "
             f"trigger={trigger:.8g}; closing position"
         )
-        order = close_position(symbol)
+        order = close_position(symbol, "profit_trail")
         if order is not None:
             logger.success(f"{symbol}: Profit-trail close submitted — id={order.id}")
             # Leave the peak until the position is gone, so a failed fill retries.
@@ -479,7 +512,7 @@ def _run_trend_flip_exits(
                         logger.error(f"{symbol}: Exit order still open; not closing position")
                         break
                 else:
-                    order = close_position(position_symbol)
+                    order = close_position(position_symbol, "trend_flip")
                     if order is not None:
                         logger.success(
                             f"{symbol}: Trend-flip close submitted — id={order.id} "
@@ -818,6 +851,7 @@ def main() -> None:
     except Exception as exc:
         logger.error(f"Cannot initialise broker {config.BROKER!r}: {exc}")
         sys.exit(1)
+    broker.exit_listener = note_exit
     if not broker.supports_trading:
         logger.error(
             f"Broker {broker.name!r} is market-data only; trading is not implemented yet. "
