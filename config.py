@@ -44,8 +44,12 @@ PROFIT_ALERT_PCT: float = float(os.getenv("PROFIT_ALERT_PCT", "5"))
 # PROFIT_TRAIL_PCT from that best. The stop and trend-flip exits still apply.
 # Per-coin values in PROFIT_TARGETS_FILE (see calibrate_profit_targets.py)
 # override these defaults. PROFIT_TRAIL_ARM_PCT=0 disables the default.
-PROFIT_TRAIL_ARM_PCT: float = float(os.getenv("PROFIT_TRAIL_ARM_PCT", "10"))
+PROFIT_TRAIL_ARM_PCT: float = float(os.getenv("PROFIT_TRAIL_ARM_PCT", "7.1"))
 PROFIT_TRAIL_PCT: float = float(os.getenv("PROFIT_TRAIL_PCT", "2"))
+# Calibration: arm % = round-trip fees + this fraction of a coin's median best
+# 7-day gain, raised so arm % - trail % still covers the fees.
+PROFIT_TRAIL_FEE_PCT: float = float(os.getenv("PROFIT_TRAIL_FEE_PCT", "0.5"))
+PROFIT_TRAIL_ARM_FRACTION: float = float(os.getenv("PROFIT_TRAIL_ARM_FRACTION", "0.66"))
 PROFIT_TARGETS_FILE: str = os.getenv("PROFIT_TARGETS_FILE", "profit_targets.json")
 
 # ---------------------------------------------------------------------------

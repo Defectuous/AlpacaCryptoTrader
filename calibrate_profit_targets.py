@@ -3,12 +3,14 @@ AlpacaCryptoTrader — Calibrate per-coin profit-trail settings from price histo
 
 For each coin, over the last --days of hourly bars:
 
-  arm_pct    The median best gain reached within --horizon-days of a random
-             hour (so price got there about half the time), rounded to 0.5
-             and kept between 3 % (clears fees) and 25 %.
+  arm_pct    PROFIT_TRAIL_FEE_PCT (round-trip fees) plus
+             PROFIT_TRAIL_ARM_FRACTION of the median best gain reached within
+             --horizon-days of a random hour, at most 25 %.
   trail_pct  3 x the median hourly ATR % (a pullback normal hourly noise
-             rarely makes), rounded to 0.5, at least 1 % and at most half of
-             arm_pct, so an armed trail keeps at least half the arm gain.
+             rarely makes), rounded to 0.5, at least 1 %, and cut (in 0.5
+             steps) so arm_pct - trail_pct covers the fees: a trail that
+             sells right after arming still clears them. If even 1 % can't,
+             arm_pct is raised instead.
 
 Writes profit_targets.json (PROFIT_TARGETS_FILE). Entries marked
 "locked": true are kept as they are, so hand-tuned values survive a rerun.
@@ -23,6 +25,7 @@ Usage
 from __future__ import annotations
 
 import argparse
+import math
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
@@ -34,7 +37,6 @@ from data.market_data import get_bars_history
 from trader.indicators import calculate_atr
 from trader.profit_targets import load_targets, save_targets
 
-MIN_ARM_PCT = 3.0
 MAX_ARM_PCT = 25.0
 MIN_TRAIL_PCT = 1.0
 TRAIL_ATR_MULTIPLE = 3.0
@@ -61,8 +63,11 @@ def calibrate(symbol: str, days: int, horizon_days: int) -> dict | None:
     median_gain = float(best_gain.median())
     median_atr = float(atr_pct.median())
 
-    arm = min(max(_round_half(median_gain), MIN_ARM_PCT), MAX_ARM_PCT)
-    trail = min(max(_round_half(median_atr * TRAIL_ATR_MULTIPLE), MIN_TRAIL_PCT), arm / 2)
+    fee = config.PROFIT_TRAIL_FEE_PCT
+    arm = min(fee + config.PROFIT_TRAIL_ARM_FRACTION * median_gain, MAX_ARM_PCT)
+    arm = round(max(arm, MIN_TRAIL_PCT + fee), 2)
+    fee_cap = math.floor((arm - fee) * 2) / 2
+    trail = max(min(_round_half(median_atr * TRAIL_ATR_MULTIPLE), fee_cap), MIN_TRAIL_PCT)
     return {
         "arm_pct": arm,
         "trail_pct": trail,

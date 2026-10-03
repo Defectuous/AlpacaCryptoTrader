@@ -241,8 +241,9 @@ edited in `config.py`.
 | `MAX_SLIPPAGE_PCT` | `0.005` | Max estimated entry slippage; also the stop-limit buffer on Alpaca |
 | `MIN_LIQUIDITY_VOLUME_USD` | `50` | Minimum average bar volume in USD |
 | `PROFIT_ALERT_PCT` | `5` | Gain % that sends a one-time profit alert; `0` disables (`.env`) |
-| `PROFIT_TRAIL_ARM_PCT` / `PROFIT_TRAIL_PCT` | `10` / `2` | Default profit trail for coins not in `profit_targets.json`; arm `0` disables (`.env`) |
+| `PROFIT_TRAIL_ARM_PCT` / `PROFIT_TRAIL_PCT` | `7.1` / `2` | Default profit trail for coins not in `profit_targets.json`; arm `0` disables (`.env`) |
 | `PROFIT_TARGETS_FILE` | `profit_targets.json` | Per-coin profit-trail settings (`.env`) |
+| `PROFIT_TRAIL_FEE_PCT` / `PROFIT_TRAIL_ARM_FRACTION` | `0.5` / `0.66` | Calibration: arm % = fees + fraction x median best gain (`.env`) |
 | `BREAKOUT_*`, `SCALP_*`, `VWAP_*` | — | Parameters for the other strategy modes |
 
 Notification settings are configured from `.env`:
@@ -274,8 +275,8 @@ The protective stop and the 4-hour trend-flip exit still apply until then, so
 whichever comes first closes the trade. The best price of each armed trail is
 kept in `logs/profit_trail.json`, so a restart doesn't lose it.
 
-Example (AAVE, arm 10 %, trail 3.5 %): bought at 164.79, the trail arms at
-181.27. If AAVE then peaks at 187.21, it sells once the bid drops to 180.66,
+Example (AAVE, arm 7 %, trail 3.5 %): bought at 164.79, the trail arms at
+176.33. If AAVE then peaks at 187.21, it sells once the bid drops to 180.66,
 about +9.6 %.
 
 ### Per-coin settings
@@ -285,13 +286,13 @@ Each coin gets its own arm and trail percentages in `profit_targets.json`
 
 ```json
 {
-  "AAVE/USD": {"arm_pct": 10, "trail_pct": 3.5},
-  "BTC/USD":  {"arm_pct": 3.5, "trail_pct": 1.5}
+  "AAVE/USD": {"arm_pct": 7, "trail_pct": 3.5},
+  "BTC/USD":  {"arm_pct": 2.8, "trail_pct": 1.5}
 }
 ```
 
 Coins not in the file use `PROFIT_TRAIL_ARM_PCT` / `PROFIT_TRAIL_PCT` from
-`.env` (defaults 10 % and 2 %). The bot re-reads the file on every check, so
+`.env` (defaults 7.1 % and 2 %). The bot re-reads the file on every check, so
 edits apply within a minute without a restart.
 
 - `"locked": true` keeps an entry's values when calibration reruns.
@@ -301,12 +302,13 @@ edits apply within a minute without a restart.
 
 `calibrate_profit_targets.py` builds the file from each coin's hourly history:
 
-- **arm %**: the median best gain the coin reached within 7 days of a random
-  hour, so price got there about half the time. Kept between 3 % (clears the
-  0.25 % per-fill fees) and 25 %.
+- **arm %**: the round-trip fees (`PROFIT_TRAIL_FEE_PCT`, 0.5 % for two
+  0.25 % fills) plus 66 % (`PROFIT_TRAIL_ARM_FRACTION`) of the median best
+  gain the coin reached within 7 days of a random hour, at most 25 %. Arming
+  below the typical move catches winners that peak short of it.
 - **trail %**: 3 x the coin's median hourly ATR, so normal hourly swings rarely
-  trigger it. At least 1 % and at most half of arm %, so an armed trail always
-  keeps at least half of the arm gain.
+  trigger it. At least 1 %, and cut if needed so arm % minus trail % covers
+  the fees: a trail that sells right after arming still clears them.
 
 ```bash
 python calibrate_profit_targets.py                         # SYMBOLS from .env
