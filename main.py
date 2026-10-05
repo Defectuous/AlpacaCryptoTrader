@@ -360,6 +360,57 @@ def _save_trail_peaks(peaks: dict[str, float]) -> None:
         logger.warning(f"Could not persist profit trail: {exc}")
 
 
+_REENTRY_LOCK_FILE = Path("logs") / "reentry_locks.json"
+
+
+def _coin_key(symbol: str) -> str:
+    """'BTC/USD' and 'BTCUSD' name the same coin."""
+    return symbol.replace("/", "").upper()
+
+
+def _load_reentry_state() -> dict | None:
+    try:
+        if _REENTRY_LOCK_FILE.exists():
+            state = json.loads(_REENTRY_LOCK_FILE.read_text(encoding="utf-8"))
+            return {"held": list(state.get("held", [])), "locked": dict(state.get("locked", {}))}
+    except Exception as exc:
+        logger.warning(f"Could not read re-entry lock file: {exc}")
+    return None
+
+
+def _save_reentry_state(state: dict) -> None:
+    try:
+        _REENTRY_LOCK_FILE.parent.mkdir(exist_ok=True)
+        _REENTRY_LOCK_FILE.write_text(json.dumps(state), encoding="utf-8")
+    except Exception as exc:
+        logger.warning(f"Could not persist re-entry locks: {exc}")
+
+
+def _update_reentry_locks(live_positions: dict[str, dict]) -> dict:
+    """
+    Lock every coin whose position closed since the last check, by any exit.
+
+    Positions held last time are kept in the lock file, so a close that
+    happens while the bot is down is still caught on the next start.
+    """
+    held_now = sorted({_coin_key(s) for s in live_positions})
+    state = _load_reentry_state()
+    if state is None:               # first run: nothing to compare against yet
+        state = {"held": held_now, "locked": {}}
+        _save_reentry_state(state)
+        return state
+
+    closed = set(state["held"]) - set(held_now)
+    now = pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%d %H:%M:%S")
+    for key in sorted(closed):
+        state["locked"][key] = now
+        logger.info(f"{key}: Position closed; no new entry until its 4h trend leaves uptrend")
+    if closed or state["held"] != held_now:
+        state["held"] = held_now
+        _save_reentry_state(state)
+    return state
+
+
 def _run_profit_trail() -> None:
     """
     Sell a winner once it turns down after reaching its arm level.
@@ -699,6 +750,8 @@ def run_scan_cycle(
         _run_trend_flip_exits(streamed_data, live_positions)
         live_positions = get_open_positions()
 
+    reentry = _update_reentry_locks(live_positions) if config.REENTRY_TREND_RESET else None
+
     if not can_trade:
         logger.info(f"Trading paused: {limit_reason}")
         return
@@ -742,6 +795,21 @@ def run_scan_cycle(
         if quote["ask"] <= 0:
             logger.warning(f"{symbol}: Invalid quote — skipping")
             continue
+
+        # ---- Trend reset after an exit ----
+        if reentry is not None and _coin_key(symbol) in reentry["locked"]:
+            completed = bars.iloc[:-1] if streamed_data is None else bars
+            if len(completed) < config.TREND_HTF_EMA_SLOW * 4:
+                continue
+            if identify_four_hour_trend(completed) == "uptrend":
+                logger.debug(
+                    f"{symbol}: Closed {reentry['locked'][_coin_key(symbol)]} UTC; "
+                    "waiting for the 4h uptrend to reset — skipping"
+                )
+                continue
+            del reentry["locked"][_coin_key(symbol)]
+            _save_reentry_state(reentry)
+            logger.info(f"{symbol}: 4h trend has left uptrend; re-entry lock cleared")
 
         # ---- Signal detection (includes profile auto-selection) ----
         signal = detect_signal(

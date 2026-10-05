@@ -210,6 +210,7 @@ def run_backtest(
     trades: list[BacktestTrade] = []
     equity  = initial_equity
     open_trade: Optional[BacktestTrade] = None
+    reentry_locked = False      # REENTRY_TREND_RESET: set on exit, cleared once the 4h trend leaves uptrend
 
     # Precompute indicators once. Recomputing the full feature set on every
     # historical bar is O(n^2) and makes 1-minute backtests impractical.
@@ -264,10 +265,15 @@ def run_backtest(
                         open_trade.equity_after = equity
                         trades.append(open_trade)
                         open_trade = None
+                        reentry_locked = config.REENTRY_TREND_RESET
 
             # ---- Look for a new signal (only when flat) ----
             if open_trade is None and i + 1 < len(df):
                 window = indicator_df.iloc[: i + 1]
+                if reentry_locked:
+                    if identify_four_hour_trend(window) == "uptrend":
+                        continue
+                    reentry_locked = False
                 close  = float(bar["close"])
                 ask    = close * (1.0 + half_spread)
                 bid    = close * (1.0 - half_spread)

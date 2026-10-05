@@ -246,6 +246,7 @@ edited in `config.py`.
 | `PROFIT_TARGETS_FILE` | `profit_targets.json` | Per-coin profit-trail settings (`.env`) |
 | `PROFIT_TRAIL_FEE_PCT` / `PROFIT_TRAIL_ARM_FRACTION` | `0.5` / `0.66` | Calibration: arm % = fees + fraction x median best gain (`.env`) |
 | `TRADE_FEE_PCT` | `0.25` | Fee % per fill for the journal's estimated fees and net P&L (`.env`) |
+| `REENTRY_TREND_RESET` | `true` | After a coin's exit, wait for its 4h trend to leave uptrend before buying it again (`.env`) |
 | `BREAKOUT_*`, `SCALP_*`, `VWAP_*` | — | Parameters for the other strategy modes |
 
 Notification settings are configured from `.env`:
@@ -470,6 +471,22 @@ The bot **will not trade** when:
 - The daily loss pause (3% / 5% of equity) or drawdown pause (12% / 18%) is active
 - The symbol already has an open position or an open trade in today's journal
 - The profile's maximum number of open positions is reached
+- The coin's last position closed and its 4-hour trend hasn't left "uptrend"
+  since (`REENTRY_TREND_RESET`, see below)
+
+### Trend reset after an exit
+
+When a coin's position closes, by any exit including a manual sell, the coin is
+locked. The lock clears once its completed 4-hour trend is seen as anything but
+"uptrend"; after that a fresh uptrend signal can buy it again. Without it the
+bot tends to re-buy the tail of the run it just sold (AAVE on Oct 2, 2026:
+re-bought 11 h after a +10.7 % sale, near that sale price, then stopped out).
+
+In a 180-day replay of 33 coins, 75 % of trades were re-buys within 3 days of
+a sale and averaged -0.29 % net. The trend reset cut trades from 1,078 to 329
+and lifted the average from -0.23 % to -0.09 %. Fixed waits of 1-72 hours
+did not help. Locks are kept in `logs/reentry_locks.json` and survive
+restarts; set `REENTRY_TREND_RESET=false` to turn it off.
 
 ---
 
