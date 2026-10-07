@@ -11,7 +11,7 @@ The journal is the single source of truth for:
 from __future__ import annotations
 
 import csv
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -52,6 +52,7 @@ COLUMNS = [
     "exit_price",
     "pnl_usd",
     "reason",
+    "closed_at",   # UTC time the exit was booked
 ]
 
 
@@ -195,6 +196,7 @@ def update_trade(
             df.loc[mask, "exit_order_id"] = exit_order_id
         if exit_price is not None:
             df.loc[mask, "exit_price"] = str(round(exit_price, 8))
+            df.loc[mask, "closed_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
             # Compute P&L when not supplied externally
             if pnl_usd is None:
                 try:
@@ -271,19 +273,34 @@ def note_exit(order, reason: str) -> None:
 # Query helpers
 # ---------------------------------------------------------------------------
 
+def today_bounds() -> tuple[datetime, datetime]:
+    """Today's local calendar day as naive UTC [start, end), to compare with stored UTC times."""
+    start, end = (
+        datetime.combine(day, time.min).astimezone().astimezone(timezone.utc).replace(tzinfo=None)
+        for day in (date.today(), date.today() + timedelta(days=1))
+    )
+    return start, end
+
+
+def _in_today(stamps: pd.Series) -> pd.Series:
+    start, end = today_bounds()
+    times = pd.to_datetime(stamps, errors="coerce")
+    return (times >= start) & (times < end)
+
+
 def _load_today(df: pd.DataFrame) -> pd.DataFrame:
-    today = date.today().strftime("%Y-%m-%d")
-    return df[df["date"] == today]
+    """Rows opened today; `date` and `time_utc` are UTC, today is the local day."""
+    return df[_in_today(df["date"].fillna("") + " " + df["time_utc"].fillna(""))]
 
 
 def get_today_stats() -> dict:
     """
     Return a dict with:
-      trades_today : int   — number of trade rows for today
-      daily_pnl    : float — sum of closed P&L for today (negative = loss)
+      trades_today : int   — number of trades opened today
+      daily_pnl    : float — P&L of trades closed today, whenever they opened (negative = loss)
     """
     if _db:
-        return _db.today_stats(date.today().strftime("%Y-%m-%d"))
+        return _db.today_stats(*today_bounds())
     ensure_journal()
     try:
         df = pd.read_csv(JOURNAL_FILE, dtype=str)
@@ -299,8 +316,8 @@ def get_today_stats() -> dict:
         else:
             trades_today = len(today_df)
 
-        closed = today_df[
-            today_df["pnl_usd"].notna() & (today_df["pnl_usd"] != "")
+        closed = df[
+            _in_today(df["closed_at"]) & df["pnl_usd"].notna() & (df["pnl_usd"] != "")
         ]
         daily_pnl = (
             closed["pnl_usd"].astype(float).sum() if not closed.empty else 0.0
@@ -318,7 +335,7 @@ def get_open_trade_symbols() -> list[str]:
     Used to prevent opening a second position in the same coin.
     """
     if _db:
-        return _db.open_trade_symbols(date.today().strftime("%Y-%m-%d"))
+        return _db.open_trade_symbols(*today_bounds())
     ensure_journal()
     open_statuses = {"new", "pending", "accepted", "partially_filled", "held", "filled"}
     try:

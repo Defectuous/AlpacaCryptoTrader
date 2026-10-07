@@ -483,31 +483,41 @@ def update_trade(**kwargs: Any) -> tuple[int, float | None] | None:
 # Reads
 # ---------------------------------------------------------------------------
 
-def today_stats(today: str) -> dict:
+_OPENED_AT = "TIMESTAMP(`date`, `time_utc`)"
+
+
+def today_stats(start: datetime, end: datetime) -> dict:
+    """Trades opened and P&L closed in the naive-UTC window [start, end)."""
     try:
         with _cursor() as cur:
             cur.execute(
                 f"""SELECT COUNT(DISTINCT NULLIF(`entry_group_id`, ''))
-                           + COALESCE(SUM(`entry_group_id` IS NULL OR `entry_group_id` = ''), 0),
-                           COALESCE(SUM(`pnl_usd`), 0)
-                    FROM `{TABLE}` WHERE `date` = %s""",
-                (today,),
+                           + COALESCE(SUM(`entry_group_id` IS NULL OR `entry_group_id` = ''), 0)
+                    FROM `{TABLE}` WHERE {_OPENED_AT} >= %s AND {_OPENED_AT} < %s""",
+                (start, end),
             )
-            trades, pnl = cur.fetchone()
+            (trades,) = cur.fetchone()
+            cur.execute(
+                f"""SELECT COALESCE(SUM(`pnl_usd`), 0) FROM `{TABLE}`
+                    WHERE `closed_at` >= %s AND `closed_at` < %s""",
+                (start, end),
+            )
+            (pnl,) = cur.fetchone()
         return {"trades_today": int(trades), "daily_pnl": float(pnl)}
     except Exception as exc:
         logger.error(f"Error reading journal stats: {exc}")
         return {"trades_today": 0, "daily_pnl": 0.0}
 
 
-def open_trade_symbols(today: str) -> list[str]:
+def open_trade_symbols(start: datetime, end: datetime) -> list[str]:
     try:
         with _cursor() as cur:
             cur.execute(
                 f"""SELECT `symbol` FROM `{TABLE}`
-                    WHERE `date` = %s AND LOWER(`status`) IN ({_OPEN_IN}) AND `exit_price` IS NULL
+                    WHERE {_OPENED_AT} >= %s AND {_OPENED_AT} < %s
+                      AND LOWER(`status`) IN ({_OPEN_IN}) AND `exit_price` IS NULL
                     GROUP BY `symbol` ORDER BY MIN(`id`)""",
-                (today, *OPEN_STATUSES),
+                (start, end, *OPEN_STATUSES),
             )
             return [r[0] for r in cur.fetchall()]
     except Exception as exc:

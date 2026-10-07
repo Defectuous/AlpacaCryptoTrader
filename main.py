@@ -13,6 +13,7 @@ import json
 import os
 import signal
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -147,7 +148,18 @@ def _is_exit_fill(order, open_trade: dict) -> bool:
     return True
 
 
+# The stream delivers order events on several threads at once. Unserialized,
+# a sync holding an older snapshot (stop "new") could write after the one
+# holding the fill, and the version cache then skipped the fill for good.
+_sync_lock = threading.Lock()
+
+
 def sync_open_positions_to_journal() -> None:
+    with _sync_lock:
+        _sync_open_positions_to_journal()
+
+
+def _sync_open_positions_to_journal() -> None:
     """
     Cross-reference the broker's orders against the journal and update any
     rows whose status has changed.
