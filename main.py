@@ -538,12 +538,22 @@ def _run_trend_flip_exits(
     live_positions: dict[str, dict],
 ) -> None:
     """Close trend-mode positions when their completed 4-hour regime changes."""
-    for symbol in config.SYMBOLS:
+    # A streamed scan carries only the coins whose bar just closed; the others
+    # are checked when their own bars arrive.
+    symbols = config.SYMBOLS if streamed_data is None else list(streamed_data)
+    # One request for every open entry order instead of one per coin.
+    open_entries: dict[str, list] = {}
+    for order in get_open_orders():
+        open_entries.setdefault(order.symbol.replace("/", ""), []).append(order)
+
+    for symbol in symbols:
         position_symbol = next(
             (key for key in live_positions if key.replace("/", "") == symbol.replace("/", "")),
             None,
         )
-        pending_entries = get_open_orders(symbol) if position_symbol is None else []
+        pending_entries = (
+            open_entries.get(symbol.replace("/", ""), []) if position_symbol is None else []
+        )
         if position_symbol is None and not pending_entries:
             continue
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import queue
 import threading
 import time
 from datetime import datetime, timezone
@@ -117,6 +118,13 @@ class AlpacaStreamRunner(StreamRunner):
         )
         self._market_thread: threading.Thread | None = None
         self._trade_thread: threading.Thread | None = None
+        self._scan_thread: threading.Thread | None = None
+        # Completed bars wait here for the scan thread. Scanning inside the
+        # websocket handler stopped the stream reading, so keepalive pongs went
+        # unanswered and Alpaca dropped the connection during every hourly scan.
+        self._scan_queue: queue.Queue[tuple[str, pd.DataFrame, dict[str, float]] | None] = (
+            queue.Queue()
+        )
         self._scan_lock = threading.Lock()
         self._last_market_message = time.monotonic()
         self._quotes: dict[str, dict[str, float]] = {}
@@ -156,7 +164,14 @@ class AlpacaStreamRunner(StreamRunner):
             return
 
         # Account checks and order placement must not block the websocket loop.
-        await asyncio.to_thread(self._run_bar_callback, bar.symbol, frame.copy(), quote.copy())
+        self._scan_queue.put((bar.symbol, frame.copy(), quote.copy()))
+
+    def _scan_worker(self) -> None:
+        while (item := self._scan_queue.get()) is not None:
+            try:
+                self._run_bar_callback(*item)
+            except Exception as exc:
+                logger.error(f"{item[0]}: Bar scan failed: {exc}", exc_info=True)
 
     def _run_bar_callback(
         self,
@@ -190,7 +205,13 @@ class AlpacaStreamRunner(StreamRunner):
             name="alpaca-trade-stream",
             daemon=True,
         )
+        self._scan_thread = threading.Thread(
+            target=self._scan_worker,
+            name="alpaca-bar-scan",
+            daemon=True,
+        )
         self._last_market_message = time.monotonic()
+        self._scan_thread.start()
         self._market_thread.start()
         self._trade_thread.start()
         logger.info(
@@ -202,7 +223,7 @@ class AlpacaStreamRunner(StreamRunner):
         """Stream threads that have exited, or a market stream gone silent."""
         dead = [
             thread.name
-            for thread in (self._market_thread, self._trade_thread)
+            for thread in (self._market_thread, self._trade_thread, self._scan_thread)
             if thread is not None and not thread.is_alive()
         ]
         silent = time.monotonic() - self._last_market_message
@@ -213,7 +234,8 @@ class AlpacaStreamRunner(StreamRunner):
     def stop(self) -> None:
         self._market_stream.stop()
         self._trade_stream.stop()
-        for thread in (self._market_thread, self._trade_thread):
+        self._scan_queue.put(None)
+        for thread in (self._market_thread, self._trade_thread, self._scan_thread):
             if thread is not None:
                 thread.join(timeout=5)
         logger.info("Streaming stopped")
