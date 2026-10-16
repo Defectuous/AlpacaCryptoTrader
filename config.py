@@ -222,7 +222,7 @@ ENABLE_SHORT_SELLING: bool = os.getenv("ENABLE_SHORT_SELLING", "false").strip().
 # ---------------------------------------------------------------------------
 # Supported values: "1Min", "5Min", "15Min", "1Hour", "1Day"
 BAR_TIMEFRAME: str = "1Hour"
-BARS_LOOKBACK: int = 500             # enough hourly history to warm up the 4h slow EMA
+BARS_LOOKBACK: int = 2000            # 500 4h candles: the 4h EMA50 must not drift as the window slides
 
 # ---------------------------------------------------------------------------
 # Order type preference
