@@ -60,6 +60,9 @@ PROFIT_TARGETS_FILE: str = os.getenv("PROFIT_TARGETS_FILE", "profit_targets.json
 # replay of 33 coins cut re-entries ~70% and moved the average trade from
 # -0.23 % to -0.09 % net of fees.
 REENTRY_TREND_RESET: bool = os.getenv("REENTRY_TREND_RESET", "true").lower() == "true"
+# Daily loss pause: hitting the daily loss limit stops new entries for this many
+# hours. After that only losses closed since the pause count toward the limit.
+DAILY_LOSS_PAUSE_HOURS: float = float(os.getenv("DAILY_LOSS_PAUSE_HOURS", "6"))
 
 # ---------------------------------------------------------------------------
 # Symbols to watch

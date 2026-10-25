@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from loguru import logger
 
@@ -53,6 +54,61 @@ def update_hwm(portfolio_value: float) -> None:
     if portfolio_value > _equity_hwm:
         _equity_hwm = portfolio_value
         _save_hwm(_equity_hwm)
+
+
+# ---------------------------------------------------------------------------
+# Daily loss pause (persisted across restarts)
+# ---------------------------------------------------------------------------
+_LOSS_PAUSE_FILE = Path("logs") / "daily_loss_pause.json"
+
+
+def _load_loss_pause() -> dict:
+    """Return {"day": local ISO date, "until": UTC ISO time, "baseline": P&L at the pause}."""
+    try:
+        if _LOSS_PAUSE_FILE.exists():
+            return json.loads(_LOSS_PAUSE_FILE.read_text(encoding="utf-8"))
+    except Exception as exc:
+        logger.warning(f"Could not read daily loss pause file: {exc}")
+    return {}
+
+
+def _save_loss_pause(state: dict) -> None:
+    try:
+        _LOSS_PAUSE_FILE.parent.mkdir(exist_ok=True)
+        _LOSS_PAUSE_FILE.write_text(json.dumps(state), encoding="utf-8")
+    except Exception as exc:
+        logger.warning(f"Could not persist daily loss pause: {exc}")
+
+
+def _check_daily_loss(daily_pnl: float, loss_cap: float, label: str) -> tuple[bool, str]:
+    """
+    Pause entries for DAILY_LOSS_PAUSE_HOURS once today's loss reaches *loss_cap*.
+
+    After the pause, losses closed before it no longer count, so the bot can
+    trade again until it loses another *loss_cap* (the baseline resets with the
+    local day, the same day the journal's daily P&L uses).
+    """
+    now = datetime.now(timezone.utc)
+    state = _load_loss_pause()
+    until = datetime.fromisoformat(state["until"]) if state.get("until") else None
+    if until is not None and now < until:
+        local_until = until.astimezone().strftime("%H:%M")
+        return False, f"{label} Daily loss pause until {local_until} local"
+
+    today = date.today().isoformat()
+    baseline = float(state.get("baseline", 0.0)) if state.get("day") == today else 0.0
+    loss = daily_pnl - baseline
+    if loss > -loss_cap:
+        return True, ""
+
+    until = now + timedelta(hours=config.DAILY_LOSS_PAUSE_HOURS)
+    _save_loss_pause({"day": today, "until": until.isoformat(), "baseline": daily_pnl})
+    return (
+        False,
+        f"{label} Daily loss limit: ${loss:.2f} / -${loss_cap:.2f}; "
+        f"pausing entries for {config.DAILY_LOSS_PAUSE_HOURS:g}h "
+        f"(until {until.astimezone().strftime('%H:%M')} local)",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -236,6 +292,7 @@ def check_daily_limits(
     Blocks trading when:
       - trades_today >= MAX_TRADES_PER_DAY
       - daily_pnl is a loss exceeding profile.max_daily_loss_pct of portfolio
+        (pauses for DAILY_LOSS_PAUSE_HOURS, see _check_daily_loss)
       - drawdown from HWM exceeds profile.max_drawdown_pct (if HWM is set)
     """
     if trades_today >= config.MAX_TRADES_PER_DAY:
@@ -249,12 +306,9 @@ def check_daily_limits(
 
         # Percentage-based daily loss check
         daily_loss_cap = portfolio_value * profile.max_daily_loss_pct
-        if daily_pnl <= -daily_loss_cap:
-            return (
-                False,
-                f"[{profile.name}] Daily loss limit: ${daily_pnl:.2f} / "
-                f"-${daily_loss_cap:.2f} ({profile.max_daily_loss_pct*100:.1f}% of equity)",
-            )
+        ok, reason = _check_daily_loss(daily_pnl, daily_loss_cap, f"[{profile.name}]")
+        if not ok:
+            return False, reason
 
         # Drawdown from high-water mark
         if _equity_hwm > 0:

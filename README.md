@@ -247,6 +247,7 @@ edited in `config.py`.
 | `PROFIT_TRAIL_FEE_PCT` / `PROFIT_TRAIL_ARM_FRACTION` | `0.5` / `0.66` | Calibration: arm % = fees + fraction x median best gain (`.env`) |
 | `TRADE_FEE_PCT` | `0.25` | Fee % per fill for the journal's estimated fees and net P&L (`.env`) |
 | `REENTRY_TREND_RESET` | `true` | After a coin's exit, wait for its 4h trend to leave uptrend before buying it again (`.env`) |
+| `DAILY_LOSS_PAUSE_HOURS` | `6` | Hours new entries stay paused after the daily loss limit is hit (`.env`) |
 | `BREAKOUT_*`, `SCALP_*`, `VWAP_*` | — | Parameters for the other strategy modes |
 
 Notification settings are configured from `.env`:
@@ -468,7 +469,10 @@ The bot **will not trade** when:
 - Hourly RSI does not confirm trend direction
 - Volatility, liquidity, or estimated slippage is outside configured limits
 - The daily trade limit has been reached (5 entries)
-- The daily loss pause (3% / 5% of equity) or drawdown pause (12% / 18%) is active
+- The daily loss pause (3% / 5% of equity) or drawdown pause (12% / 18%) is active.
+  The daily loss pause lasts `DAILY_LOSS_PAUSE_HOURS` (6 h); after it, only losses
+  closed since the pause count toward the limit, and it all resets at local
+  midnight. The pause is kept in `logs/daily_loss_pause.json` across restarts
 - The symbol already has an open position or an open trade in today's journal
 - The profile's maximum number of open positions is reached
 - The coin's last position closed and its 4-hour trend hasn't left "uptrend"
