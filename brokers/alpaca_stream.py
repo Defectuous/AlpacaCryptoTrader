@@ -12,7 +12,7 @@ import asyncio
 import queue
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pandas as pd
@@ -55,6 +55,21 @@ class _CryptoDataStream(CryptoDataStream):
         if msg.get("T") == "error" and msg.get("code") in _PLAN_LIMIT_CODES:
             self.rejection = f"{msg.get('msg')} ({msg.get('code')})"
         await super()._dispatch(msg)
+
+
+# Queued in place of a completed bar to ask the scan thread for a quote re-check.
+_RECHECK = object()
+# Run re-checks a few seconds past the boundary, clear of the minute-bar arrival.
+_RECHECK_OFFSET_SECONDS = 5
+
+
+def _next_recheck(now: datetime, every_minutes: int, bar_minutes: int) -> datetime:
+    """Next re-check boundary after now, skipping bar closes (those scan anyway)."""
+    step = _bucket_start(now, every_minutes)
+    while True:
+        step = step + timedelta(minutes=every_minutes)
+        if (step.hour * 60 + step.minute) % bar_minutes:
+            return step
 
 
 def _bucket_start(timestamp: datetime, minutes: int) -> datetime:
@@ -134,6 +149,8 @@ class AlpacaStreamRunner(StreamRunner):
         self.symbols = symbols
         self.on_bar_close = on_bar_close
         self.on_trade_update = on_trade_update
+        self._bar_minutes = minutes
+        self._recheck_thread: threading.Thread | None = None
         self._market_stream = _CryptoDataStream(
             config.ALPACA_API_KEY,
             config.ALPACA_SECRET_KEY,
@@ -154,7 +171,7 @@ class AlpacaStreamRunner(StreamRunner):
         # Completed bars wait here for the scan thread. Scanning inside the
         # websocket handler stopped the stream reading, so keepalive pongs went
         # unanswered and Alpaca dropped the connection during every hourly scan.
-        self._scan_queue: queue.Queue[tuple[str, pd.DataFrame, dict[str, float]] | None] = (
+        self._scan_queue: queue.Queue[tuple[str, pd.DataFrame, dict[str, float]] | object | None] = (
             queue.Queue()
         )
         self._scan_lock = threading.Lock()
@@ -163,9 +180,13 @@ class AlpacaStreamRunner(StreamRunner):
         self._frames: dict[str, pd.DataFrame] = {}
         self._aggregators = {symbol: _BarAggregator(minutes) for symbol in symbols}
 
+        # REST history ends with the still-forming bar; keep closed bars only so a
+        # quote re-check before the first streamed close doesn't read a partial candle.
+        now = pd.Timestamp(datetime.now(timezone.utc))
         for symbol in symbols:
             bars = get_bars(symbol)
             if not bars.empty:
+                bars = bars[bars.index + pd.Timedelta(minutes=minutes) <= now]
                 self._frames[symbol] = bars.tail(config.BARS_LOOKBACK).copy()
 
     async def _handle_quote(self, quote: Any) -> None:
@@ -202,10 +223,39 @@ class AlpacaStreamRunner(StreamRunner):
 
     def _scan_worker(self) -> None:
         while (item := self._scan_queue.get()) is not None:
+            if item is _RECHECK:
+                try:
+                    self._run_recheck_callback()
+                except Exception as exc:
+                    logger.error(f"Quote re-check failed: {exc}", exc_info=True)
+                continue
             try:
                 self._run_bar_callback(*item)
             except Exception as exc:
                 logger.error(f"{item[0]}: Bar scan failed: {exc}", exc_info=True)
+
+    def _run_recheck_callback(self) -> None:
+        if self.on_quote_recheck is None:
+            return
+        with self._scan_lock:
+            snapshot = {
+                symbol: (frame.copy(), quote.copy())
+                for symbol, frame in self._frames.items()
+                if (quote := self._quotes.get(symbol)) is not None
+            }
+            if snapshot:
+                self.on_quote_recheck(snapshot)
+
+    def _recheck_loop(self, every_minutes: int) -> None:
+        while not self._stopping.is_set():
+            now = datetime.now(timezone.utc)
+            due = _next_recheck(now, every_minutes, self._bar_minutes)
+            wait = (due - now).total_seconds() + _RECHECK_OFFSET_SECONDS
+            if self._stopping.wait(wait):
+                return
+            # Skip a re-check that would pile up behind a bar scan still running.
+            if self._scan_queue.empty():
+                self._scan_queue.put(_RECHECK)
 
     def _run_bar_callback(
         self,
@@ -293,11 +343,29 @@ class AlpacaStreamRunner(StreamRunner):
             f"({config.BAR_TIMEFRAME} bars + quotes + trade updates)"
         )
 
+        every = config.QUOTE_RECHECK_MINUTES
+        if every <= 0 or self.on_quote_recheck is None:
+            return
+        if 60 % every or every >= self._bar_minutes:
+            logger.warning(
+                f"QUOTE_RECHECK_MINUTES={every} must divide 60 and be shorter than "
+                f"{config.BAR_TIMEFRAME} bars — quote re-checks disabled"
+            )
+            return
+        self._recheck_thread = threading.Thread(
+            target=self._recheck_loop,
+            args=(every,),
+            name="alpaca-quote-recheck",
+            daemon=True,
+        )
+        self._recheck_thread.start()
+        logger.info(f"Quote re-checks every {every} min between {config.BAR_TIMEFRAME} bar closes")
+
     def dead_streams(self) -> list[str]:
         """Stream threads that have exited, or a market stream gone silent."""
         dead = [
             thread.name
-            for thread in (self._trade_thread, self._scan_thread)
+            for thread in (self._trade_thread, self._scan_thread, self._recheck_thread)
             if thread is not None and not thread.is_alive()
         ]
         if self._poller is not None:
@@ -324,6 +392,7 @@ class AlpacaStreamRunner(StreamRunner):
             self._trade_thread,
             self._scan_thread,
             self._watch_thread,
+            self._recheck_thread,
         ):
             if thread is not None:
                 thread.join(timeout=5)

@@ -63,6 +63,11 @@ REENTRY_TREND_RESET: bool = os.getenv("REENTRY_TREND_RESET", "true").lower() == 
 # Daily loss pause: hitting the daily loss limit stops new entries for this many
 # hours. After that only losses closed since the pause count toward the limit.
 DAILY_LOSS_PAUSE_HOURS: float = float(os.getenv("DAILY_LOSS_PAUSE_HOURS", "6"))
+# Quote re-check: between bar closes, re-run the entry checks every N minutes on
+# the last closed bars with a fresh quote, so a setup blocked only by a wide
+# spread or slippage at the bar close gets another chance before the next bar.
+# Indicators don't change between bar closes. 0 disables; must divide 60.
+QUOTE_RECHECK_MINUTES: int = int(os.getenv("QUOTE_RECHECK_MINUTES", "15"))
 
 # ---------------------------------------------------------------------------
 # Symbols to watch

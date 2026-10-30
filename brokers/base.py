@@ -26,6 +26,7 @@ BarCloseCallback = Callable[
     None,
 ]
 TradeUpdateCallback = Callable[[Any], None]
+QuoteRecheckCallback = Callable[[dict[str, tuple[pd.DataFrame, dict[str, float]]]], None]
 
 # Quote returned when data is unavailable; spread_pct=999 blocks trading.
 BLOCKING_QUOTE: dict[str, float] = {"bid": 0.0, "ask": 0.0, "spread_pct": 999.0}
@@ -110,6 +111,10 @@ class OrderRequest:
 
 class StreamRunner(ABC):
     """Delivers completed strategy bars (and order updates) to callbacks."""
+
+    #: Optional: called with the {symbol: (closed bars, fresh quote)} snapshot every
+    #: QUOTE_RECHECK_MINUTES between bar closes. Runners that don't support it ignore it.
+    on_quote_recheck: QuoteRecheckCallback | None = None
 
     @abstractmethod
     def start(self) -> None: ...

@@ -519,6 +519,23 @@ def _handle_stream_bar(
         logger.error(f"Stream scan error for {symbol}: {exc}", exc_info=True)
 
 
+def _handle_quote_recheck(
+    snapshot: dict[str, tuple[pd.DataFrame, dict[str, float]]],
+) -> None:
+    """Re-run entry checks between bar closes on the last closed bars with fresh quotes.
+
+    Only the quote-driven gates (spread, slippage) can change before the next
+    bar closes, so this gives setups they blocked at the bar close another try.
+    """
+    if config.STRATEGY_MODE == "breakout_rotation":
+        return
+    logger.info(f"Quote re-check: {len(snapshot)} symbols on last closed bars")
+    try:
+        run_scan_cycle(snapshot)
+    except Exception as exc:
+        logger.error(f"Quote re-check scan error: {exc}", exc_info=True)
+
+
 def _handle_stream_trade_update(update) -> None:
     """Reconcile the journal when the broker publishes an order update.
 
@@ -1000,6 +1017,7 @@ def main() -> None:
         on_bar_close=_handle_stream_bar,
         on_trade_update=_handle_stream_trade_update,
     )
+    runner.on_quote_recheck = _handle_quote_recheck
 
     exit_code = 0
     try:

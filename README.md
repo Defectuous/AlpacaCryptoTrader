@@ -248,6 +248,7 @@ edited in `config.py`.
 | `TRADE_FEE_PCT` | `0.25` | Fee % per fill for the journal's estimated fees and net P&L (`.env`) |
 | `REENTRY_TREND_RESET` | `true` | After a coin's exit, wait for its 4h trend to leave uptrend before buying it again (`.env`) |
 | `DAILY_LOSS_PAUSE_HOURS` | `6` | Hours new entries stay paused after the daily loss limit is hit (`.env`) |
+| `QUOTE_RECHECK_MINUTES` | `15` | Between bar closes, re-run entry checks on the last closed bars with a fresh quote every N minutes; `0` disables (`.env`) |
 | `BREAKOUT_*`, `SCALP_*`, `VWAP_*` | — | Parameters for the other strategy modes |
 
 Notification settings are configured from `.env`:
