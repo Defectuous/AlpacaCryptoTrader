@@ -23,4 +23,12 @@ profit_targets.json
 
 # Backtest outputs
 backtest/results/
+data/history/
 backtest_*.txt
+logs/ibkr_entries.json
+
+# Local archive of old backtests/logs
+archive/
+
+# Alpaca MCP server keys (second account)
+.env.mcp

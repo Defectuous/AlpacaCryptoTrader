@@ -12,6 +12,8 @@ Usage
     python backtest_runner.py --symbols BTC/USD --days 90 --equity 5000 --shorts
     python backtest_runner.py --days 60 --out backtest/results
     python backtest_runner.py --start 2026-02-04 --end 2026-03-06
+    python backtest_runner.py --cache --symbols all --days 360   # offline, from fetch_history.py
+    python backtest_runner.py --cache --symbols all --days 360 --equity 500 --portfolio
 
 Arguments
 ---------
@@ -23,6 +25,10 @@ Arguments
 --shorts     Enable short-selling for this run (overrides config)
 --out        Output folder for CSV results (default: backtest/results)
 --timeframe  Bar timeframe, e.g. "15Min" "1Hour" (default: from config)
+--cache      Read bars from the local store filled by fetch_history.py (no broker calls)
+--portfolio  Replay all symbols like the live bot: one shared account, max open
+             positions, daily limits, per-coin profit trail and fees
+--targets    profit_targets.json to use with --portfolio (copy the Pi's for live values)
 """
 from __future__ import annotations
 
@@ -35,9 +41,12 @@ from loguru import logger
 
 import config
 from brokers import resolve_symbols
+from data import history_store
 from data.market_data import get_bars_history
-from backtest.engine import run_backtest, run_rotation_backtest
+from backtest.engine import run_backtest, run_portfolio_backtest, run_rotation_backtest
 from backtest.report import compute_stats, print_report, save_trades_csv
+
+_PORTFOLIO_WARMUP_DAYS = 40
 
 
 def _combined_max_drawdown(trades, initial_equity: float) -> float:
@@ -105,13 +114,33 @@ def _parse_args() -> argparse.Namespace:
         metavar="TF",
         help='Bar timeframe override, e.g. "15Min" "1Hour" (default: from config)',
     )
+    parser.add_argument(
+        "--cache", action="store_true",
+        help="Read bars from the local store (fetch_history.py) instead of the broker",
+    )
+    parser.add_argument(
+        "--portfolio", action="store_true",
+        help="Run all symbols as the live bot does: one shared account, max open positions, "
+             "daily limits, profit trail and fees",
+    )
+    parser.add_argument(
+        "--targets", default=None, metavar="FILE",
+        help="profit_targets.json for --portfolio (default: PROFIT_TARGETS_FILE)",
+    )
     args = parser.parse_args()
 
     if args.symbols and [s.lower() for s in args.symbols] == ["all"]:
         config.TRADE_ALL_SYMBOLS = True
         config.SYMBOLS.clear()
         args.symbols = None
-    if args.symbols is None:
+    if args.symbols is None and args.cache and (config.TRADE_ALL_SYMBOLS or not config.SYMBOLS):
+        # "all" from the cache: no broker call, so the bot's key is never used.
+        args.symbols = [
+            s for s in history_store.cached_symbols(args.timeframe or config.BAR_TIMEFRAME)
+            if s not in config.EXCLUDED_SYMBOLS
+        ]
+        config.SYMBOLS[:] = args.symbols
+    elif args.symbols is None:
         args.symbols = list(resolve_symbols())
     else:
         # The trend strategy only trades config.SYMBOLS, so tested symbols must be in it.
@@ -164,9 +193,14 @@ def main() -> None:
     histories = {}
     run_ts     = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")
 
+    # The portfolio replay warms its indicators up on bars before the test period.
+    fetch_start = start - timedelta(days=_PORTFOLIO_WARMUP_DAYS) if args.portfolio else start
     for symbol in args.symbols:
-        logger.info(f"Fetching history for {symbol}…")
-        df = get_bars_history(symbol, start, end, args.timeframe)
+        if args.cache:
+            df = history_store.load(symbol, fetch_start, end, config.BAR_TIMEFRAME)
+        else:
+            logger.info(f"Fetching history for {symbol}…")
+            df = get_bars_history(symbol, fetch_start, end, args.timeframe)
         if df.empty:
             logger.warning(f"{symbol}: No data returned — skipping")
             continue
@@ -174,6 +208,24 @@ def main() -> None:
 
     if not histories:
         logger.error("No historical bars available; backtest was not run")
+        return
+
+    if args.portfolio:
+        if args.targets:
+            config.PROFIT_TARGETS_FILE = args.targets
+        if not Path(config.PROFIT_TARGETS_FILE).exists():
+            logger.warning(
+                f"{config.PROFIT_TARGETS_FILE} not found; every coin uses the .env profit-trail "
+                f"defaults ({config.PROFIT_TRAIL_ARM_PCT}% / {config.PROFIT_TRAIL_PCT}%)"
+            )
+        trades, curve = run_portfolio_backtest(histories, args.equity, trade_from=start)
+        stats = compute_stats(trades, args.equity)
+        if stats and not curve.empty:
+            stats["max_drawdown"] = float((1 - curve / curve.cummax()).max())
+        print_report(f"PORTFOLIO, live rules ({len(histories)} symbols, {days_label}d)", stats, args.equity)
+        if trades:
+            save_trades_csv(trades, out_dir / f"portfolio_{days_label}d_{run_ts}.csv")
+            curve.to_csv(out_dir / f"portfolio_{days_label}d_{run_ts}_equity.csv", header=["equity"])
         return
 
     if config.STRATEGY_MODE == "breakout_rotation":

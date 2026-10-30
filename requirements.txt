@@ -1,4 +1,5 @@
 alpaca-py>=0.38.0
+ib_async>=2.0.1          # Interactive Brokers TWS API client (BROKER=ibkr)
 pandas>=2.0.0
 PyMySQL>=1.1.0            # trade journal in MySQL / MariaDB (DB_HOST)
 numpy>=1.24.0

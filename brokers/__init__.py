@@ -1,7 +1,7 @@
 """
 Broker selection.
 
-The active exchange is chosen with BROKER in .env ("alpaca" or "coinbase").
+The active exchange is chosen with BROKER in .env ("alpaca", "coinbase" or "ibkr").
 Call get_broker() anywhere to get the shared instance.
 """
 from __future__ import annotations
@@ -28,8 +28,12 @@ def get_broker() -> Broker:
                 from brokers.coinbase import CoinbaseBroker
 
                 _broker = CoinbaseBroker()
+            elif name == "ibkr":
+                from brokers.ibkr import IBKRBroker
+
+                _broker = IBKRBroker()
             else:
-                raise ValueError(f"Unknown BROKER {name!r}; use 'alpaca' or 'coinbase'")
+                raise ValueError(f"Unknown BROKER {name!r}; use 'alpaca', 'coinbase' or 'ibkr'")
     return _broker
 
 

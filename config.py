@@ -13,6 +13,8 @@ load_dotenv()
 # ---------------------------------------------------------------------------
 # "alpaca"   -> Alpaca crypto, paper or live. Long only.
 # "coinbase" -> Coinbase Advanced Trade. Market data only for now; see brokers/coinbase.py.
+# "ibkr"     -> Interactive Brokers through TWS / IB Gateway. Spot is long only;
+#               IBKR_MARKET=futures trades CME micro futures long and short.
 BROKER: str = os.getenv("BROKER", "alpaca").strip().lower()
 
 # ---------------------------------------------------------------------------
@@ -21,6 +23,38 @@ BROKER: str = os.getenv("BROKER", "alpaca").strip().lower()
 ALPACA_API_KEY: str = os.getenv("ALPACA_API_KEY", "")
 ALPACA_SECRET_KEY: str = os.getenv("ALPACA_SECRET_KEY", "")
 ALPACA_PAPER: bool = os.getenv("ALPACA_PAPER", "true").lower() == "true"
+
+# Separate key for the local price-history store (fetch_history.py), so backtest
+# downloads never share the live bot's API key or its rate limit.
+BACKTEST_ALPACA_API_KEY: str = os.getenv("BACKTEST_ALPACA_API_KEY", "")
+BACKTEST_ALPACA_SECRET_KEY: str = os.getenv("BACKTEST_ALPACA_SECRET_KEY", "")
+HISTORY_DIR: str = os.getenv("HISTORY_DIR", "data/history")
+
+# ---------------------------------------------------------------------------
+# Interactive Brokers (loaded from .env; see brokers/ibkr.py)
+# ---------------------------------------------------------------------------
+# Default ports: IB Gateway 4002 paper / 4001 live, TWS 7497 paper / 7496 live.
+IBKR_HOST: str = os.getenv("IBKR_HOST", "127.0.0.1").strip()
+IBKR_PORT: int = int(os.getenv("IBKR_PORT", "4002"))
+# Orders can only be cancelled by the client id that placed them; keep it fixed.
+IBKR_CLIENT_ID: int = int(os.getenv("IBKR_CLIENT_ID", "17"))
+IBKR_ACCOUNT: str = os.getenv("IBKR_ACCOUNT", "").strip()      # blank = first account
+# Safety check: refuse to start when the logged-in account is not a paper account.
+IBKR_PAPER: bool = os.getenv("IBKR_PAPER", "true").lower() == "true"
+# "spot" = PAXOS crypto, long only; "futures" = CME micro futures, long and short.
+IBKR_MARKET: str = os.getenv("IBKR_MARKET", "spot").strip().lower()
+# Override the futures product per symbol, e.g. "BTC/USD=MBT,ETH/USD=MET".
+IBKR_FUTURES_PRODUCTS: str = os.getenv("IBKR_FUTURES_PRODUCTS", "").strip()
+# Futures: close positions this many days before the contract expires.
+IBKR_ROLL_DAYS: int = int(os.getenv("IBKR_ROLL_DAYS", "3"))
+# 1 = live market data (needs a subscription), 3 = delayed.
+IBKR_MARKET_DATA_TYPE: int = int(os.getenv("IBKR_MARKET_DATA_TYPE", "1"))
+# Spot coins tried for SYMBOLS=all; ones IBKR does not list are skipped.
+IBKR_CRYPTO_SYMBOLS: list[str] = [
+    s.strip().upper()
+    for s in os.getenv("IBKR_CRYPTO_SYMBOLS", "BTC,ETH,LTC,BCH,SOL,XRP,ADA,DOGE,AVAX,LINK").split(",")
+    if s.strip()
+]
 # ---------------------------------------------------------------------------
 # Trade journal database (MySQL / MariaDB; see trader/journal_db.py)
 # ---------------------------------------------------------------------------

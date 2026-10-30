@@ -1,8 +1,9 @@
 # AlpacaCryptoTrader
 
 A beginner-friendly crypto trading bot in Python. It trades on
-[Alpaca Markets](https://alpaca.markets) today, with an exchange-neutral broker
-layer and a Coinbase adapter in progress for long **and** short trading later.
+[Alpaca Markets](https://alpaca.markets) or Interactive Brokers (long **and**
+short through CME micro futures), with an exchange-neutral broker layer and a
+Coinbase adapter in progress.
 
 **Strategy:** 4-hour trend with hourly momentum confirmation  
 **Coins:** BTC and ETH by default, or every Alpaca USD coin with `SYMBOLS=all`  
@@ -32,6 +33,8 @@ AlpacaCryptoTrader/
 │   ├── alpaca.py           ← Alpaca (paper/live, long only, managed stops)
 │   ├── alpaca_stream.py    ← Alpaca WebSocket bars/quotes/order updates
 │   ├── coinbase.py         ← Coinbase (market data now; trading to finish)
+│   ├── ibkr.py             ← Interactive Brokers via TWS API (spot or futures)
+│   ├── order_tags.py       ← entry/exit order tags shared by Alpaca and IBKR
 │   └── polling_stream.py   ← REST polling runner for brokers without WebSockets
 ├── backtest/
 │   ├── engine.py           ← bar-by-bar strategy simulator
@@ -85,7 +88,7 @@ Copy-Item .env.example .env
 Edit `.env`:
 
 ```
-BROKER=alpaca              # exchange adapter: alpaca or coinbase
+BROKER=alpaca              # exchange adapter: alpaca, coinbase or ibkr
 SYMBOLS=BTC/USD,ETH/USD    # or "all" for every tradable USD coin on the broker
 ENABLE_SHORT_SELLING=false # shorts need a broker that can short (Alpaca can't)
 
@@ -94,6 +97,10 @@ ALPACA_SECRET_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ALPACA_PAPER=true          # keep true until you are consistently profitable
 
 COINBASE_MARKET=spot       # only used with BROKER=coinbase
+
+IBKR_PORT=4002             # only used with BROKER=ibkr; see "Brokers" below
+IBKR_PAPER=true
+IBKR_MARKET=futures        # spot (long only) or futures (long + short)
 
 DISCORD_WEBHOOK_URL=       # optional: Discord trade alerts webhook URL
 TELEGRAM_BOT_TOKEN=        # optional: Telegram BotFather token
@@ -213,11 +220,13 @@ edited in `config.py`.
 
 | Setting | Default | Description |
 |---|---|---|
-| `BROKER` | `alpaca` | Exchange adapter: `alpaca` or `coinbase` (`.env`) |
+| `BROKER` | `alpaca` | Exchange adapter: `alpaca`, `coinbase` or `ibkr` (`.env`) |
 | `ALPACA_PAPER` | `true` | Paper trading mode (`.env`) |
 | `ENABLE_SHORT_SELLING` | `false` | Take short entries when the broker supports them (`.env`) |
 | `STRATEGY_MODE` | `4h_trend_momentum` | Active signal mode (`.env`) |
 | `COINBASE_MARKET` | `spot` | Coinbase: `spot` (long only) or `futures` (long + short) (`.env`) |
+| `IBKR_MARKET` | `spot` | IBKR: `spot` (PAXOS, long only) or `futures` (CME micro, long + short) (`.env`) |
+| `IBKR_PAPER` | `true` | IBKR: refuse to start unless logged in to a paper account (`.env`) |
 | `SYMBOLS` | `BTC/USD,ETH/USD` | Comma-separated coins, or `all` for every broker coin (`.env`) |
 | `EXCLUDED_SYMBOLS` | USD stablecoins | Never traded, even with `SYMBOLS=all` |
 | `BAR_TIMEFRAME` | `"1Hour"` | Input timeframe; bars are aggregated into 4-hour trend candles |
@@ -350,6 +359,7 @@ Pick the adapter with `BROKER` in `.env`.
 |---|---|---|---|---|---|
 | `alpaca` | ✅ free | ✅ | ✅ | ❌ (Alpaca crypto can't short) | Working |
 | `coinbase` | ❌ (no real sandbox) | planned | ✅ | ✅ with `COINBASE_MARKET=futures` | Market data only |
+| `ibkr` | ✅ free paper account | ✅ | ✅ | ✅ with `IBKR_MARKET=futures` (spot can't short) | Working; tested offline, not yet against TWS |
 
 **Alpaca protective stops.** Alpaca rejects bracket/OTO orders for crypto, so
 the adapter places the entry as a plain order and then keeps a stop-limit exit
@@ -368,6 +378,39 @@ orders are routed to the US perpetual-style futures (`BIP-20DEC30-CDE` for BTC,
 `ETP-20DEC30-CDE` for ETH), which allow shorts. Trading and account methods
 are stubs; the bot refuses to start on Coinbase until they are implemented.
 The steps are in the docstring of [brokers/coinbase.py](brokers/coinbase.py).
+
+**Interactive Brokers.** The bot connects to a running TWS or IB Gateway
+through the TWS API ([ib_async](https://github.com/ib-api-reloaded/ib_async)),
+not with API keys. Log TWS / the Gateway in to your **paper** account, enable
+*Configure → API → Settings → Enable ActiveX and Socket Clients*, and set the
+port (Gateway 4002 paper / 4001 live, TWS 7497 / 7496). If the Gateway runs on
+another machine than the bot, set `IBKR_HOST`, add the bot's IP under Trusted
+IPs and untick "Allow connections from localhost only". IB Gateway logs out
+once a day; the bot then exits and systemd restarts it until the Gateway is
+back ([IBC](https://github.com/IbcAlpha/IBC) can automate the Gateway login).
+
+* `IBKR_MARKET=spot`: PAXOS crypto. IBKR does **not** allow shorting spot
+  crypto, and only accepts market and limit orders for it, so there is no
+  stop order at the exchange. The bot checks the quote after every order
+  update, every scan and once a minute, and sells at market once the stop or
+  target is reached. If the bot is down, the position is unprotected.
+  Market entries go in as IOC limits capped at `MAX_SLIPPAGE_PCT`, because
+  IBKR sizes crypto market buys in dollars.
+* `IBKR_MARKET=futures`: CME Micro Bitcoin (`MBT`, 0.1 BTC) and Micro Ether
+  (`MET`, 0.1 ETH) futures, **long and short**. Stops are real `STP`
+  orders held by IBKR, paired with a take-profit `LMT` in one OCA group and
+  re-sized when the position changes. Sizes round down to whole contracts
+  (one MBT is about 0.1 BTC of exposure, so small accounts can't size a
+  trade). Entries use the nearest contract expiring more than
+  `IBKR_ROLL_DAYS` days out, and positions are closed that many days before
+  expiry. Signals use continuous-futures bars. Needs futures permission and
+  CME market data (`IBKR_MARKET_DATA_TYPE=3` gives free delayed data for
+  testing). Paper accounts share the live account's permissions and data.
+
+The stop and target ride in each entry's `orderRef` (as on Alpaca), with a
+copy in `logs/ibkr_entries.json` because TWS only returns recent completed
+orders. Keep `IBKR_CLIENT_ID` fixed: TWS only lets a client cancel its own
+orders.
 
 ---
 

@@ -559,3 +559,199 @@ def run_rotation_backtest(
         f"ending equity=${equity:.2f}"
     )
     return trades
+
+
+# ---------------------------------------------------------------------------
+# Live-bot portfolio replay
+# ---------------------------------------------------------------------------
+
+# Daily limits reset at local midnight on the Pi (trader/journal.py today_bounds).
+_LOCAL_TZ = "America/New_York"
+
+
+def run_portfolio_backtest(
+    data: dict[str, pd.DataFrame],
+    initial_equity: float = 10_000.0,
+    targets: Optional[dict[str, dict]] = None,
+    trade_from: Optional[datetime] = None,
+) -> tuple[list[BacktestTrade], pd.Series]:
+    """Replay the 4h trend strategy the way main.py trades it: one shared account.
+
+    Bars before *trade_from* only warm up the indicators; trading starts there.
+
+    Mirrors the live bot on every completed hourly bar:
+      - exits: protective stop, per-coin profit trail (profit_targets.json),
+        then the 4h trend flip; re-entry waits for the trend to reset
+      - entries: symbols scanned in config.SYMBOLS order; skipped while a
+        position or entry is open in that symbol, when the profile's
+        max-open-positions is reached, or when cash can't cover the order
+      - sizing: calculate_position_qty() on current equity (risk %, $ min/max)
+      - daily limits: MAX_TRADES_PER_DAY, daily-loss % (P&L of trades closed
+        that local day) and drawdown pause from the equity high-water mark
+      - costs: TRADE_FEE_PCT per side plus the synthetic half spread
+
+    Returns (closed trades with P&L after costs, hourly equity curve).
+    """
+    if config.STRATEGY_MODE != "4h_trend_momentum":
+        raise ValueError("run_portfolio_backtest requires STRATEGY_MODE='4h_trend_momentum'")
+    from trader.profit_targets import load_targets, trail_settings
+
+    targets = load_targets() if targets is None else targets
+    frames = {
+        symbol: add_all_indicators(frame.sort_index())
+        for symbol, frame in data.items()
+        if frame is not None and not frame.empty
+    }
+    order = [s for s in config.SYMBOLS if s in frames] + sorted(s for s in frames if s not in config.SYMBOLS)
+    positions = {s: {stamp: i for i, stamp in enumerate(f.index)} for s, f in frames.items()}
+    timestamps = sorted({stamp for f in frames.values() for stamp in f.index})
+    min_bars = max(config.EMA_LONG + config.PULLBACK_LOW_BARS + 10, config.TREND_HTF_EMA_SLOW * 4 + 10)
+
+    fee = config.TRADE_FEE_PCT / 100.0
+    half_spread = _BACKTEST_SPREAD_PCT / 100.0 / 2.0
+    original_short = config.ENABLE_SHORT_SELLING
+    config.ENABLE_SHORT_SELLING = False     # Alpaca spot is long only
+
+    cash = initial_equity
+    hwm = initial_equity
+    open_trades: dict[str, BacktestTrade] = {}
+    cost_basis: dict[str, float] = {}
+    trail_best: dict[str, float] = {}
+    pending: dict[str, tuple] = {}          # symbol -> (signal, qty, profile)
+    locked: set[str] = set()
+    last_close: dict[str, float] = {}
+    trades: list[BacktestTrade] = []
+    curve: dict = {}
+    day = None
+    entries_today = 0
+    pnl_today = 0.0
+    loss_baseline = 0.0                     # pnl_today when the last daily loss pause started
+    loss_pause_until = None
+
+    def close(symbol: str, price: float, reason: str, stamp) -> None:
+        nonlocal cash, pnl_today
+        trade = open_trades.pop(symbol)
+        proceeds = trade.qty * price * (1 - half_spread)
+        cash += proceeds * (1 - fee)
+        trade.pnl_usd = proceeds * (1 - fee) - cost_basis.pop(symbol)
+        trade.exit_time, trade.exit_price, trade.exit_reason = stamp, price, reason
+        trail_best.pop(symbol, None)
+        pnl_today += trade.pnl_usd
+        trades.append(trade)
+        if config.REENTRY_TREND_RESET:
+            locked.add(symbol)
+
+    def equity_now() -> float:
+        return cash + sum(t.qty * last_close[s] for s, t in open_trades.items())
+
+    try:
+        for stamp in timestamps:
+            local_day = stamp.tz_convert(_LOCAL_TZ).date()
+            if local_day != day:
+                day, entries_today, pnl_today, loss_baseline = local_day, 0, 0.0, 0.0
+            bars = {s: frames[s].iloc[positions[s][stamp]] for s in frames if stamp in positions[s]}
+            for s, bar in bars.items():
+                last_close[s] = float(bar["close"])
+            if trade_from is not None and stamp < pd.Timestamp(trade_from):
+                continue
+
+            # ---- Pending limit entries fill on the next bar or are cancelled ----
+            for symbol in [s for s in pending if s in bars]:
+                signal, qty, profile = pending.pop(symbol)
+                if not _simulate_limit_fill(signal, bars[symbol]):
+                    continue
+                spend = qty * signal.entry * (1 + half_spread)
+                if spend * (1 + fee) > cash:
+                    continue
+                cash -= spend * (1 + fee)
+                cost_basis[symbol] = spend * (1 + fee)
+                open_trades[symbol] = BacktestTrade(
+                    symbol=symbol, side="long", entry=signal.entry, stop=signal.stop,
+                    target=signal.target, qty=qty, entry_bar=positions[symbol][stamp],
+                    entry_time=stamp, regime=signal.regime, risk_profile=signal.risk_profile,
+                    reason=signal.reason, exit_on_trend_flip=True, remaining_qty=qty,
+                )
+
+            # ---- Exits: stop, then profit trail, then 4h trend flip ----
+            for symbol in list(open_trades):
+                bar = bars.get(symbol)
+                if bar is None:
+                    continue
+                trade = open_trades[symbol]
+                if trade.entry_time == stamp:
+                    continue                    # filled this bar; exits start next bar
+                hit = _check_exit(trade, bar)
+                if hit:
+                    close(symbol, hit["exit_price"], hit["exit_reason"], stamp)
+                    continue
+                arm_pct, trail_pct = trail_settings(symbol, targets)
+                if arm_pct > 0 and trail_pct > 0:
+                    best = trail_best.get(symbol)
+                    if best is not None and float(bar["low"]) <= best * (1 - trail_pct / 100):
+                        close(symbol, best * (1 - trail_pct / 100), "profit-trail", stamp)
+                        continue
+                    if best is not None or float(bar["high"]) >= trade.entry * (1 + arm_pct / 100):
+                        trail_best[symbol] = max(best or 0.0, float(bar["high"]))
+                window = frames[symbol].iloc[: positions[symbol][stamp] + 1]
+                if identify_four_hour_trend(window) != "uptrend":
+                    close(symbol, float(bar["close"]), "trend-flip", stamp)
+
+            equity = equity_now()
+            hwm = max(hwm, equity)
+            curve[stamp] = equity
+
+            # ---- Entries ----
+            if loss_pause_until is not None and stamp < loss_pause_until:
+                continue
+            if pnl_today - loss_baseline <= -equity * STANDARD_PROFILE.max_daily_loss_pct:
+                loss_baseline = pnl_today
+                loss_pause_until = stamp + pd.Timedelta(hours=config.DAILY_LOSS_PAUSE_HOURS)
+                continue
+            if (
+                entries_today >= config.MAX_TRADES_PER_DAY
+                or (hwm - equity) / hwm >= STANDARD_PROFILE.max_drawdown_pct
+            ):
+                continue
+            for symbol in order:
+                if symbol not in bars or symbol in open_trades or symbol in pending:
+                    continue
+                index = positions[symbol][stamp]
+                if index < min_bars:
+                    continue
+                window = frames[symbol].iloc[: index + 1]
+                if symbol in locked:
+                    if identify_four_hour_trend(window) == "uptrend":
+                        continue
+                    locked.discard(symbol)
+                close_px = last_close[symbol]
+                signal = detect_signal(
+                    df=window, symbol=symbol,
+                    ask_price=close_px * (1 + half_spread), bid_price=close_px * (1 - half_spread),
+                    spread_pct=_BACKTEST_SPREAD_PCT, use_closed_candle=False,
+                )
+                if signal is None or signal.side != "long":
+                    continue
+                if not validate_setup(signal.entry, signal.stop, signal.target, signal.side)[0]:
+                    continue
+                profile = HIGH_RISK_PROFILE if signal.risk_profile == "higher-risk" else STANDARD_PROFILE
+                if len(open_trades) + len(pending) >= profile.max_open_positions:
+                    continue
+                qty = calculate_position_qty(signal.entry, signal.stop, equity, profile, signal.side)
+                if qty <= 0 or qty * signal.entry > cash:
+                    continue
+                pending[symbol] = (signal, qty, profile)
+                entries_today += 1
+                if entries_today >= config.MAX_TRADES_PER_DAY:
+                    break
+
+        for symbol in list(open_trades):
+            close(symbol, last_close[symbol], "end-of-data", timestamps[-1])
+        if timestamps:
+            curve[timestamps[-1]] = cash
+    finally:
+        config.ENABLE_SHORT_SELLING = original_short
+
+    for trade in trades:
+        trade.equity_after = curve.get(trade.exit_time, cash)
+    logger.info(f"Portfolio backtest complete — {len(trades)} trades, ending equity=${cash:.2f}")
+    return trades, pd.Series(curve, dtype=float)

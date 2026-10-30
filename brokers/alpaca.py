@@ -48,6 +48,12 @@ from brokers.base import (
     TradeUpdateCallback,
     spread_pct,
 )
+from brokers.order_tags import (
+    ENTRY_TAG,
+    EXIT_TAG,
+    entry_client_id,
+    parse_entry_client_id,
+)
 
 _TIMEFRAMES: dict[str, TimeFrame] = {
     "1Min":  TimeFrame(1,  TimeFrameUnit.Minute),
@@ -58,8 +64,6 @@ _TIMEFRAMES: dict[str, TimeFrame] = {
 }
 MINUTES_PER_BAR: dict[str, int] = {"1Min": 1, "5Min": 5, "15Min": 15, "1Hour": 60, "1Day": 1440}
 
-ENTRY_TAG = "acx-e-"            # entry orders placed by the bot
-EXIT_TAG = "acx-x-"             # protective exits placed by ensure_protection()
 _QTY_TOLERANCE = 0.001          # re-place the stop if position size drifts > 0.1 %
 _HTTP_TIMEOUT = (10, 30)        # (connect, read) seconds for every REST call
 _CANCEL_CONFIRM_SECONDS = 10.0  # how long close_position() waits for cancels to settle
@@ -82,25 +86,6 @@ def _with_timeout(client: Any) -> Any:
 
     session.request = request
     return client
-
-
-def _plain(value: float | None) -> str:
-    """Fixed-point text; '%g' would give '8.6e-06' for PEPE, whose '-' breaks parsing."""
-    return f"{value or 0:.12f}".rstrip("0").rstrip(".") or "0"
-
-
-def _entry_client_id(stop: float | None, target: float | None) -> str:
-    return f"{ENTRY_TAG}{_plain(stop)}-{_plain(target)}-{uuid4().hex[:12]}"
-
-
-def _parse_entry_client_id(client_id: str) -> tuple[float | None, float | None]:
-    """Return (stop, target) encoded by _entry_client_id, None when absent."""
-    try:
-        stop_s, target_s, _ = client_id[len(ENTRY_TAG):].split("-")
-        stop, target = float(stop_s), float(target_s)
-    except ValueError:
-        return None, None
-    return (stop or None), (target or None)
 
 
 def _enum_str(value: Any) -> str:
@@ -262,7 +247,7 @@ class AlpacaBroker(Broker):
             "side": OrderSide.SELL if request.side == "sell" else OrderSide.BUY,
             "time_in_force": TimeInForce.GTC,
             "client_order_id": request.client_order_id
-            or _entry_client_id(request.stop_loss, request.take_profit),
+            or entry_client_id(request.stop_loss, request.take_profit),
         }
         if request.order_type == "limit":
             if request.limit_price is None:
@@ -320,7 +305,7 @@ class AlpacaBroker(Broker):
         for raw in self._trading.get_orders(request):
             order = self._order(raw)
             if order.client_order_id.startswith(ENTRY_TAG) and order.filled_qty > 0:
-                return _parse_entry_client_id(order.client_order_id)
+                return parse_entry_client_id(order.client_order_id)
         return None, None
 
     def _place_stop(self, position: Position, stop: float) -> None:
