@@ -1,4 +1,11 @@
-"""Live Alpaca crypto market-data and trade-update streams (WebSocket)."""
+"""Live Alpaca crypto market-data and trade-update streams (WebSocket).
+
+The market-data stream is used only while the data plan allows it. If Alpaca
+rejects the subscription (e.g. "symbol limit exceeded" on the free plan) or
+sends no market data soon after start, market data switches to REST polling
+for the rest of the run. Trade updates always stream: they come from the
+trading API, which the data plan does not limit.
+"""
 from __future__ import annotations
 
 import asyncio
@@ -14,7 +21,9 @@ from alpaca.trading.stream import TradingStream
 from loguru import logger
 
 import config
+from brokers import get_broker
 from brokers.base import BarCloseCallback, StreamRunner, TradeUpdateCallback
+from brokers.polling_stream import PollingStreamRunner
 from data.market_data import get_bars
 
 
@@ -28,6 +37,24 @@ _TIMEFRAME_MINUTES = {
 # Quotes arrive every few seconds; this long without any market message means the
 # stream (or a scan blocking its loop) is stuck even though the thread is alive.
 _STALL_SECONDS = 600
+
+# A working stream sends quotes within seconds. Five minutes also outlasts the
+# brief "connection limit exceeded" (406) seen while a previous session times out.
+_STREAM_GRACE_SECONDS = 300
+
+# Stream errors meaning the data plan does not cover this subscription.
+_PLAN_LIMIT_CODES = {405, 409}  # symbol limit exceeded, insufficient subscription
+
+
+class _CryptoDataStream(CryptoDataStream):
+    """Records plan-limit errors, which alpaca-py only logs."""
+
+    rejection: str | None = None
+
+    async def _dispatch(self, msg: dict) -> None:
+        if msg.get("T") == "error" and msg.get("code") in _PLAN_LIMIT_CODES:
+            self.rejection = f"{msg.get('msg')} ({msg.get('code')})"
+        await super()._dispatch(msg)
 
 
 def _bucket_start(timestamp: datetime, minutes: int) -> datetime:
@@ -107,7 +134,7 @@ class AlpacaStreamRunner(StreamRunner):
         self.symbols = symbols
         self.on_bar_close = on_bar_close
         self.on_trade_update = on_trade_update
-        self._market_stream = CryptoDataStream(
+        self._market_stream = _CryptoDataStream(
             config.ALPACA_API_KEY,
             config.ALPACA_SECRET_KEY,
         )
@@ -119,6 +146,11 @@ class AlpacaStreamRunner(StreamRunner):
         self._market_thread: threading.Thread | None = None
         self._trade_thread: threading.Thread | None = None
         self._scan_thread: threading.Thread | None = None
+        self._watch_thread: threading.Thread | None = None
+        self._stopping = threading.Event()
+        self._has_market_data = False
+        # Set when the market stream is unavailable and REST polling replaces it.
+        self._poller: PollingStreamRunner | None = None
         # Completed bars wait here for the scan thread. Scanning inside the
         # websocket handler stopped the stream reading, so keepalive pongs went
         # unanswered and Alpaca dropped the connection during every hourly scan.
@@ -138,6 +170,7 @@ class AlpacaStreamRunner(StreamRunner):
 
     async def _handle_quote(self, quote: Any) -> None:
         self._last_market_message = time.monotonic()
+        self._has_market_data = True
         bid = float(quote.bid_price)
         ask = float(quote.ask_price)
         mid = (bid + ask) / 2.0
@@ -149,6 +182,7 @@ class AlpacaStreamRunner(StreamRunner):
 
     async def _handle_bar(self, bar: Any) -> None:
         self._last_market_message = time.monotonic()
+        self._has_market_data = True
         completed = self._aggregators[bar.symbol].update(bar)
         if completed is None:
             return
@@ -190,6 +224,40 @@ class AlpacaStreamRunner(StreamRunner):
     async def _handle_trade_update(self, update: Any) -> None:
         await asyncio.to_thread(self.on_trade_update, update)
 
+    def _watch_market_stream(self) -> None:
+        """Switch market data to REST polling if the stream never delivers."""
+        assert self._market_thread is not None
+        deadline = time.monotonic() + _STREAM_GRACE_SECONDS
+        while not self._has_market_data:
+            if self._stopping.wait(1):
+                return
+            if self._market_stream.rejection:
+                reason = f"Alpaca rejected the subscription: {self._market_stream.rejection}"
+            elif not self._market_thread.is_alive():
+                reason = "the stream closed before sending data"
+            elif time.monotonic() > deadline:
+                reason = f"no market data within {_STREAM_GRACE_SECONDS // 60} min"
+            else:
+                continue
+            self._fall_back_to_polling(reason)
+            return
+        logger.info("Market-data stream is live")
+
+    def _fall_back_to_polling(self, reason: str) -> None:
+        logger.warning(
+            f"Market-data stream unavailable ({reason}); polling {len(self.symbols)} "
+            f"symbols over REST at each {config.BAR_TIMEFRAME} bar instead"
+        )
+        try:
+            self._market_stream.stop()
+        except Exception as exc:
+            logger.debug(f"Market stream stop: {exc}")
+        poller = PollingStreamRunner(
+            get_broker(), self.symbols, self.on_bar_close, self.on_trade_update
+        )
+        poller.start()
+        self._poller = poller
+
     def start(self) -> None:
         self._market_stream.subscribe_quotes(self._handle_quote, *self.symbols)
         self._market_stream.subscribe_bars(self._handle_bar, *self.symbols)
@@ -210,10 +278,16 @@ class AlpacaStreamRunner(StreamRunner):
             name="alpaca-bar-scan",
             daemon=True,
         )
+        self._watch_thread = threading.Thread(
+            target=self._watch_market_stream,
+            name="alpaca-stream-watch",
+            daemon=True,
+        )
         self._last_market_message = time.monotonic()
         self._scan_thread.start()
         self._market_thread.start()
         self._trade_thread.start()
+        self._watch_thread.start()
         logger.info(
             f"Streaming started for {len(self.symbols)} symbols "
             f"({config.BAR_TIMEFRAME} bars + quotes + trade updates)"
@@ -223,19 +297,34 @@ class AlpacaStreamRunner(StreamRunner):
         """Stream threads that have exited, or a market stream gone silent."""
         dead = [
             thread.name
-            for thread in (self._market_thread, self._trade_thread, self._scan_thread)
+            for thread in (self._trade_thread, self._scan_thread)
             if thread is not None and not thread.is_alive()
         ]
-        silent = time.monotonic() - self._last_market_message
-        if self._market_thread is not None and silent > _STALL_SECONDS:
-            dead.append(f"alpaca-market-stream (no data for {silent / 60:.0f} min)")
+        if self._poller is not None:
+            dead += self._poller.dead_streams()
+        # Until the stream has delivered data, the watcher decides whether to poll.
+        elif self._has_market_data and self._market_thread is not None:
+            if not self._market_thread.is_alive():
+                dead.append(self._market_thread.name)
+            silent = time.monotonic() - self._last_market_message
+            if silent > _STALL_SECONDS:
+                dead.append(f"alpaca-market-stream (no data for {silent / 60:.0f} min)")
         return dead
 
     def stop(self) -> None:
-        self._market_stream.stop()
+        self._stopping.set()
+        if self._poller is not None:
+            self._poller.stop()
+        else:
+            self._market_stream.stop()
         self._trade_stream.stop()
         self._scan_queue.put(None)
-        for thread in (self._market_thread, self._trade_thread, self._scan_thread):
+        for thread in (
+            self._market_thread,
+            self._trade_thread,
+            self._scan_thread,
+            self._watch_thread,
+        ):
             if thread is not None:
                 thread.join(timeout=5)
         logger.info("Streaming stopped")
