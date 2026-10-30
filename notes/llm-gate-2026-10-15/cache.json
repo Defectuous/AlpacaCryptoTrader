@@ -1,0 +1,1882 @@
+{
+"strict|2026-07-20T09:00:00+00:00|BONK/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent spike is driven by a near-zero volume anomaly (12 hours of 0.0 volume followed by a single 0.1 spike), indicating a lack of genuine market participation and high risk of a fake breakout or liquidity gap rather than sustainable momentum."
+},
+"strict|2026-07-25T15:00:00+00:00|SHIB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The volume spike is negligible (2.0x average) and the price is already at the 7-day high, indicating a lack of fresh buying pressure to sustain the momentum against the 0.6% round-trip cost."
+},
+"strict|2026-07-25T16:00:00+00:00|SHIB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with no volume support (0% of average) and the recent spike is driven by a single isolated candle rather than sustained momentum, making continuation unlikely."
+},
+"strict|2026-07-29T03:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action is a single isolated spike with zero volume support and no prior trend, indicating a likely one-time pump or data anomaly rather than a sustainable momentum move."
+},
+"strict|2026-08-06T15:00:00+00:00|ADA/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (31.9x average) in the last hour, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"strict|2026-08-15T02:00:00+00:00|LINK/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (9.7x average) coinciding with the breakout, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"strict|2026-08-19T16:00:00+00:00|ETH/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 8.2% surge is supported by a massive 18x volume spike and the price is holding at the 7-day high, indicating strong momentum and continuation potential rather than a one-off spike."
+},
+"strict|2026-08-19T23:00:00+00:00|TRUMP/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (88x average) in the last hour, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"strict|2026-08-20T08:00:00+00:00|PEPE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The massive 10.7x and 26.7x volume spikes in the last two hours confirm strong institutional participation behind the +10.6% move, and the price is holding near the 7-day high, indicating momentum is likely to continue rather than reverse."
+},
+"strict|2026-08-21T03:00:00+00:00|CRV/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a massive volume spike (16.3x average) coinciding with the breakout, and the price is at the 7-day high, indicating fresh buying pressure rather than a retracement."
+},
+"strict|2026-08-21T06:00:00+00:00|BCH/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with strong recent acceleration (+10% in 3h) and significant volume spike (3.6x average) in the last hour, indicating fresh momentum rather than a stale move."
+},
+"strict|2026-08-21T15:00:00+00:00|BCH/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, supported by broad market strength, suggests continuation rather than exhaustion."
+},
+"strict|2026-08-21T21:00:00+00:00|AAVE/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended significantly (+11% in 3h) and is at the 7-day high, while the recent volume spike has completely dried up (last 6 hours near zero), indicating the move is likely exhausted and prone to a reversal rather than continuation."
+},
+"strict|2026-08-21T22:00:00+00:00|SHIB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (10.8x average) in the last hour, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"strict|2026-08-22T02:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The signal is invalid due to zero trading volume in the last 11 hours, making execution impossible and the price data unreliable."
+},
+"strict|2026-08-22T03:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended +41% in 3 hours, leaving minimal room for the required +2% continuation steps before hitting the sell condition, and the extreme volume spike suggests a potential blow-off top rather than a sustainable trend."
+},
+"strict|2026-08-22T04:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with a parabolic spike driven by extreme volume, indicating a likely blow-off top rather than a sustainable momentum continuation."
+},
+"strict|2026-08-22T05:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already retraced 6.8% from its 7-day high and the last hourly bar closed down, indicating the momentum has stalled and the strategy's exit condition is already met."
+},
+"strict|2026-08-22T08:00:00+00:00|POL/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is at its 7-day high with no volume support (15.7x average is a single spike, not sustained flow), and the market is down, making continuation unlikely."
+},
+"strict|2026-08-23T13:00:00+00:00|AAVE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a sharp acceleration in the last two hours (+5.1% then +10.4%) accompanied by a significant volume spike (2.5x average), indicating strong momentum and potential continuation rather than a one-off spike."
+},
+"strict|2026-08-27T14:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action shows a sharp spike followed by a significant pullback from the recent high, indicating momentum is stalling and the risk of an immediate lower close outweighs the potential for continuation."
+},
+"strict|2026-08-27T15:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price spike is driven by a single isolated volume spike (36.4x) with zero follow-through volume in the last 11 hours, indicating a likely one-off pump or wash trade rather than sustained momentum."
+},
+"strict|2026-08-27T16:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action shows a parabolic spike with no volume support, and the coin is down 14% from its 7-day high, indicating a likely mean-reversion rather than a sustainable trend."
+},
+"strict|2026-08-30T12:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a fresh breakout to new highs, supported by a significant volume spike in the last two hours and a bullish market backdrop, suggesting the move is likely to continue rather than reverse immediately."
+},
+"strict|2026-08-31T21:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The volume spike is an outlier (87x average) following a period of zero volume, indicating a potential wash trade or liquidity injection rather than organic demand, and the price is already +19% from the 7-day high with no room for the required continuation to cover fees."
+},
+"strict|2026-08-31T22:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price spike is driven by a single anomalous volume spike (86.4x average) followed by a near-zero volume bar, indicating a likely wash trade or liquidity manipulation rather than sustained organic momentum, and the price is already at its 7-day high with no room for further upside."
+},
+"strict|2026-08-31T23:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price surge is driven by a single anomalous volume spike (85.4x average) followed by near-zero activity, indicating a likely one-off manipulation or liquidity event rather than sustained momentum, and the market is not broadly participating in the move."
+},
+"strict|2026-09-01T00:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already +37.5% from the 7-day low and +0.0% from the 7-day high, indicating the move is exhausted and likely to reverse, while the recent volume spike is followed by a sharp drop in activity, signaling a lack of continuation fuel."
+},
+"strict|2026-09-01T07:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a massive volume spike (16.8x) coinciding with the breakout, and price is at the 7-day high, indicating fresh buying pressure rather than a retracement."
+},
+"strict|2026-09-02T16:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended significantly (+10% in 3h) and is at the 7-day high, leaving little room for the required +2% continuation to cover fees, while the recent volume spike is isolated and the broader market is flat."
+},
+"strict|2026-09-03T15:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action shows a massive spike followed by a sharp pullback from the high, indicating a failed breakout or distribution rather than a sustainable momentum trend, and the volume spike is isolated without follow-through."
+},
+"strict|2026-09-03T18:00:00+00:00|ARB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 1-hour return of +8.8% is an extreme outlier compared to the 3-hour average, indicating a massive, fresh impulse that is highly likely to continue rather than reverse, supported by a significant volume spike (16.6x) and the fact that the coin is the only one clearing the 8% bar."
+},
+"strict|2026-09-05T18:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a recent volume spike (3.5x average) and price at the 7-day high, indicating fresh breakout rather than a retracement."
+},
+"strict|2026-09-05T21:00:00+00:00|ARB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive 28x volume spike in the last hour, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"strict|2026-09-06T00:00:00+00:00|ARB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (27.5x average) coinciding with the acceleration, indicating strong institutional interest and momentum continuation rather than a one-off pump."
+},
+"strict|2026-09-07T14:00:00+00:00|DOT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a fresh breakout to new highs, supported by a massive 18x volume spike in the last hour and a clean upward trend, indicating high probability of continuation despite the recent pullback."
+},
+"strict|2026-09-08T15:00:00+00:00|DOT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 3-hour surge is driven by a massive volume spike (6.2x average) and the price is breaking out to a new 7-day high, indicating strong momentum rather than a retracement."
+},
+"strict|2026-09-08T17:00:00+00:00|DOT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a recent breakout to new highs, supported by a significant volume spike (6.1x average) in the last hour, indicating institutional interest and potential continuation despite the flat market."
+},
+"strict|2026-09-11T13:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp pullback from the recent high (109.0 to 104.0) with declining volume, indicating the momentum is stalling rather than continuing, which fails the requirement for the move to keep going for several more hours."
+},
+"strict|2026-09-13T15:00:00+00:00|FIL/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 107.5x volume spike in the final hour confirms a genuine breakout rather than a fake-out, and the price is at a 7-day high with strong momentum, making continuation likely enough to cover the 0.6% round-trip cost."
+},
+"strict|2026-09-18T02:00:00+00:00|ARB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (21.4x average) in the final hour, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"strict|2026-09-19T02:00:00+00:00|XTZ/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The extreme volume spike (50.6x) immediately preceding the parabolic move suggests a one-time liquidity event or wash trade rather than sustained organic demand, making continuation unlikely."
+},
+"strict|2026-09-19T14:00:00+00:00|XTZ/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with a massive volume spike, indicating a potential blow-off top or distribution rather than a sustainable momentum continuation."
+},
+"strict|2026-09-19T15:00:00+00:00|XTZ/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The last hour closed down (-1.1%) and the price is already -1.1% from its 7-day high, indicating the momentum has stalled and the strategy's exit condition is imminent."
+},
+"strict|2026-09-19T17:00:00+00:00|FIL/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The massive volume spike (55.8x) occurring exactly at the peak of a parabolic move with zero prior volume suggests a liquidity-driven spike or wash trade rather than sustained demand, making continuation highly unlikely."
+},
+"strict|2026-09-19T18:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent spike is driven by a single isolated volume spike (14.7x) followed by a complete volume collapse to near-zero, indicating a lack of sustained market participation and high risk of a reversal."
+},
+"strict|2026-09-20T13:00:00+00:00|AVAX/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already extended significantly from the 7-day high and the recent volume spike is followed by a sharp pullback in the last few hours, indicating exhaustion rather than continuation."
+},
+"strict|2026-09-20T15:00:00+00:00|AVAX/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, supported by broad market rally, suggests continuation despite recent chop."
+},
+"strict|2026-09-20T17:00:00+00:00|RENDER/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The last hourly bar closed lower (-2.9%), which triggers the strategy's immediate sell condition, making a new buy invalid."
+},
+"strict|2026-09-21T10:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with no volume support, indicating the move is likely exhausted and prone to a reversal rather than continuation."
+},
+"strict|2026-09-21T12:00:00+00:00|ARB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (7.9x average) coinciding with the breakout, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"strict|2026-09-21T14:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already spiked 14.4% in the last 3 hours, leaving very little room for the required +2% continuation moves to overcome the 0.6% round-trip cost, and the volume spike is isolated with no sustained follow-through."
+},
+"strict|2026-09-21T15:00:00+00:00|PEPE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive recent spike (+18.7% in 3h) accompanied by a significant volume surge (5.5x average) in the last hour, indicating strong momentum and liquidity rather than a dead-end pump."
+},
+"strict|2026-09-22T05:00:00+00:00|BONK/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price surge is driven by a single anomalous volume spike (22.6x average) followed by a near-complete collapse in activity, indicating a likely one-off liquidation or wash trade rather than sustained momentum, and the coin is already at its 7-day high with no room for the required +2% cont"
+},
+"strict|2026-09-22T12:00:00+00:00|BCH/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 115% spike in the final hour accompanied by a 7.5x volume surge indicates a fresh, high-momentum breakout rather than a stale move, and the price is at the 7-day high, suggesting strong continuation potential despite the recent chop."
+},
+"strict|2026-09-22T22:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 10.4x volume spike on the final bar confirms strong institutional participation driving the breakout, and the price is at the 7-day high with no resistance overhead, making continuation highly likely despite the recent chop."
+},
+"strict|2026-09-24T04:00:00+00:00|LTC/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price has broken out of a 24-hour consolidation with a sharp 3-hour surge (+10.4%) accompanied by a significant volume spike (6.7x average), indicating strong momentum and institutional interest that supports continuation."
+},
+"strict|2026-09-24T13:00:00+00:00|ONDO/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 12x volume spike on the final bar confirms strong institutional participation driving the breakout, and the price is at a 7-day high with no overhead resistance, making continuation highly likely despite the recent pullback."
+},
+"strict|2026-09-26T15:00:00+00:00|FIL/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (5.8x average) coinciding with the breakout, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"strict|2026-09-27T19:00:00+00:00|GRT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 3-hour surge to +16.9% is driven by a massive 7.4x volume spike in the final hour, confirming strong institutional participation and momentum continuation rather than a low-volume pump."
+},
+"strict|2026-09-27T21:00:00+00:00|GRT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already retraced significantly from the recent high (128.6 to 120.5), indicating a failed breakout and momentum loss, while the broader market is flat and only 18% of coins are up, suggesting a lack of systemic support for continuation."
+},
+"strict|2026-09-27T23:00:00+00:00|GRT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already spiked 11.8% in 3 hours and is consolidating near the 7-day high with no fresh volume, indicating the momentum is exhausted and the risk of a pullback outweighs the potential for continuation."
+},
+"strict|2026-09-28T12:00:00+00:00|LINK/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 11.8x volume spike on the final bar confirms strong institutional participation driving the breakout, and the price is at a 7-day high with no resistance overhead, making continuation highly likely."
+},
+"strict|2026-09-28T18:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action shows a sharp spike into resistance near the 7-day high with no sustained volume support, indicating a likely mean reversion rather than a continuation trend."
+},
+"strict|2026-09-29T07:00:00+00:00|AAVE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with accelerating volume (4.4x average) and a strong, sustained 3-hour momentum (+9.6%) that is significantly outpacing the broader market, indicating a high-probability continuation rather than a mean reversion."
+},
+"strict|2026-10-08T18:00:00+00:00|ONDO/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action shows a massive spike followed by a catastrophic 10% drop in the last 3 hours, indicating a failed breakout or liquidation event rather than a sustainable momentum trend."
+},
+"strict|2026-10-09T15:00:00+00:00|BAT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (56x average) in the last two hours, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"strict|2026-10-11T15:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with a massive spike in volume, indicating a potential blow-off top or distribution rather than a sustainable momentum continuation."
+},
+"strict|2026-10-11T16:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The last hourly bar closed down (-4.1%), which triggers the immediate sell condition, and the volume spike is concentrated in the final hour, indicating a potential blow-off top rather than a sustainable trend."
+},
+"strict|2026-10-11T17:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already retraced significantly from the recent spike (128.2 to 124.0) and the volume spike is followed by a sharp drop, indicating the momentum is stalling rather than continuing."
+},
+"strict|2026-10-11T20:00:00+00:00|FIL/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a sharp acceleration in the last hour (+5.0%) supported by a massive 10x volume spike, indicating strong momentum and institutional interest rather than a one-off pump."
+},
+"strict|2026-10-13T03:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with no volume support (0.5x average) and the recent spike is driven by a single isolated bar, indicating a likely dead end rather than a continuation."
+},
+"loose|2026-07-18T02:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action is a single isolated spike with no volume support, and the coin is significantly below its 7-day high, indicating a lack of sustained momentum."
+},
+"loose|2026-07-18T04:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single anomalous volume spike (18.3x) followed by a complete volume collapse to near-zero, indicating a lack of sustained market participation and high risk of a reversal."
+},
+"loose|2026-07-20T09:00:00+00:00|BONK/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent spike is driven by a single isolated volume spike after 11 hours of zero activity, indicating a lack of sustained market interest and high risk of immediate reversal."
+},
+"loose|2026-07-20T10:00:00+00:00|BONK/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent spike is driven by near-zero volume (0.1x average), indicating a lack of institutional participation and high risk of a reversal, especially given the coin is down 22% from its 7-day high."
+},
+"loose|2026-07-25T14:00:00+00:00|SHIB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent spike is driven by a single anomalous volume spike (41.5x) followed by near-zero activity, indicating a potential wash trade or liquidity gap rather than sustained momentum, and the price is already at the 7-day high with no volume to support continuation."
+},
+"loose|2026-07-25T15:00:00+00:00|SHIB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with a parabolic spike in the last hour, and the extreme volume spike (200x average) in the final hour suggests a blow-off top or liquidation event rather than sustainable momentum, making the risk of an immediate reversal too high for the strategy's tight stop"
+},
+"loose|2026-07-25T16:00:00+00:00|SHIB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with a massive spike in volume, indicating a potential blow-off top or distribution phase rather than a sustainable momentum continuation."
+},
+"loose|2026-07-25T18:00:00+00:00|SHIB/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed lower (-1.6%), which triggers the immediate sell condition, and the recent volume spike has already faded to zero, indicating the momentum is exhausted."
+},
+"loose|2026-07-25T19:00:00+00:00|SHIB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at the 7-day high with a sharp acceleration in the last 3 hours (+17.6% in 6h) supported by a significant volume spike (5.7x average), indicating strong momentum rather than a pullback."
+},
+"loose|2026-07-25T21:00:00+00:00|WIF/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price surge is driven by a single isolated volume spike (7.4x) followed by a complete collapse in activity (0.1x), indicating a lack of sustained market interest and high risk of a reversal."
+},
+"loose|2026-07-26T05:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp pullback from the recent high (110.1 to 108.2) with zero volume in the last 11 hours, indicating a stalled momentum and high risk of a continued decline rather than continuation."
+},
+"loose|2026-07-26T06:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already peaked at the 7-day high and the last two hourly bars show a pullback, indicating the momentum is stalling rather than continuing."
+},
+"loose|2026-07-26T08:00:00+00:00|SHIB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The last two hourly bars closed lower (-2.6%), triggering the strategy's sell condition, and the extreme volume spike at the start and end of the window suggests a one-off event rather than sustained momentum."
+},
+"loose|2026-07-26T13:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed lower (-0.8%), triggering the strategy's immediate sell condition, and the volume spike is isolated to the final hour without sustained momentum in the preceding bars."
+},
+"loose|2026-07-26T14:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp spike followed by a pullback and consolidation, indicating momentum has stalled, and the recent volume spike is likely driven by the initial surge rather than sustained buying pressure needed to overcome fees."
+},
+"loose|2026-07-26T15:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a sharp volume spike (7.2x average) coinciding with the breakout, and the price is holding near the 7-day high, suggesting continuation rather than a one-off spike."
+},
+"loose|2026-07-28T04:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price spike is driven by a massive volume anomaly (10x average) that is not supported by broader market strength or sustained momentum, indicating a likely one-off spike or manipulation rather than a trend continuation."
+},
+"loose|2026-07-28T16:00:00+00:00|ONDO/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price spike is driven by a single anomalous volume spike (130.5x average) with zero preceding volume, indicating a likely one-off liquidity event or wash trade rather than sustained momentum, and the 1-hour close is negative."
+},
+"loose|2026-07-29T03:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action shows a massive vertical spike from a flat base with no preceding volume, indicating a likely manipulation or liquidity gap rather than sustainable momentum, and the market is not broadly participating in the rally."
+},
+"loose|2026-07-29T09:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The massive 7.7x volume spike on the final bar confirms strong institutional participation driving the breakout, and the price is holding above the recent 104.8 high with no immediate resistance, indicating high probability of continuation."
+},
+"loose|2026-07-29T13:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price surge is driven by extreme, isolated volume spikes (8.3x and 9.5x) rather than sustained momentum, and the flat last hour combined with the coin being near its 7-day high suggests the move is stalling or reversing rather than continuing."
+},
+"loose|2026-07-30T12:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a sharp volume spike (10.2x average) in the last two hours and price breaking above the 7-day high, indicating fresh buying pressure rather than a stale move."
+},
+"loose|2026-08-02T04:00:00+00:00|ADA/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, supported by broad market rally, suggests continuation rather than exhaustion."
+},
+"loose|2026-08-03T13:00:00+00:00|ADA/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a fresh breakout to new highs, significant volume spike in the last two hours, and a broad market rally supporting continuation."
+},
+"loose|2026-08-04T02:00:00+00:00|AVAX/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (47x average) coinciding with the breakout, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-08-06T14:00:00+00:00|ADA/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The signal is approved due to the massive 32.5x volume spike in the final hour coinciding with a strong +5.8% move, indicating a fresh breakout with significant liquidity rather than a stale pump."
+},
+"loose|2026-08-06T17:00:00+00:00|ADA/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last two hourly bars closed lower (-1.1% and -1.2%), indicating the momentum has already reversed and the strategy's exit condition is imminent, making entry unprofitable."
+},
+"loose|2026-08-06T18:00:00+00:00|ADA/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced significantly from the 7-day high and the last few hourly bars show a lack of momentum (109.2 -> 108.0 -> 108.4), indicating the impulse is stalling rather than continuing."
+},
+"loose|2026-08-15T02:00:00+00:00|LINK/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (9.7x average) coinciding with the breakout, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-08-15T04:00:00+00:00|LINK/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last two hourly bars closed lower (-1.4%, -1.3%), indicating the momentum has already reversed and the strategy's exit condition is imminent, making entry unprofitable."
+},
+"loose|2026-08-15T05:00:00+00:00|LINK/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced significantly from the 7-day high and the last hourly close is lower than the previous, indicating the momentum has stalled and the strategy's exit condition is imminent."
+},
+"loose|2026-08-19T15:00:00+00:00|ETH/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (19.5x average) in the last hour, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-08-19T23:00:00+00:00|TRUMP/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (88x average) in the last hour, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-08-20T08:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already spiked 9.8% in 6 hours and is at the 7-day high, leaving no room for the required +2% continuation to cover fees, while the volume spike is a single outlier followed by a sharp drop, indicating a likely blow-off top rather than a sustainable trend."
+},
+"loose|2026-08-20T09:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed down (-3.3%), which triggers the immediate sell condition, and the recent volume spike has already collapsed to near zero, indicating the momentum is exhausted."
+},
+"loose|2026-08-20T10:00:00+00:00|WIF/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a clear distribution phase with lower highs and lower lows over the last 12 hours, and the extreme volume spike is isolated to a single hour, indicating a lack of sustained momentum to justify the 0.6% round-trip cost."
+},
+"loose|2026-08-20T11:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already spiked 9.4% in 6 hours and is now consolidating with a sharp drop in volume, indicating the momentum is exhausted and the risk of a pullback outweighs the potential for continuation."
+},
+"loose|2026-08-20T12:00:00+00:00|XRP/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a recent breakout to new highs, supported by a significant volume spike (9.3x average) in the last hour and a favorable broad market trend, indicating high probability of continuation."
+},
+"loose|2026-08-20T20:00:00+00:00|CRV/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day highs, supported by broad market rally, suggests continuation rather than exhaustion."
+},
+"loose|2026-08-20T23:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high suggests continuation, but the recent choppy price action and low volume in the last few hours indicate potential exhaustion or a pullback risk."
+},
+"loose|2026-08-21T00:00:00+00:00|CRV/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, supported by broad market rally, suggests continuation rather than exhaustion."
+},
+"loose|2026-08-21T02:00:00+00:00|CRV/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (16.3x average) coinciding with the final +6.8% hourly candle, indicating strong institutional accumulation and momentum continuation rather than a top."
+},
+"loose|2026-08-21T05:00:00+00:00|CRV/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price has broken out of a 24-hour consolidation with a massive volume spike (16x average) in the last few hours, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-08-21T08:00:00+00:00|BCH/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (31.2x average) in the last hour, indicating strong institutional participation and momentum continuation rather than a top."
+},
+"loose|2026-08-21T10:00:00+00:00|BCH/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced from its 7-day high and the last two hourly closes are lower, indicating the momentum is stalling and the strategy's exit condition is imminent."
+},
+"loose|2026-08-21T11:00:00+00:00|BCH/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced from its 7-day high and the last few hourly bars show no momentum, indicating the move is stalling rather than continuing."
+},
+"loose|2026-08-21T12:00:00+00:00|TRUMP/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The massive 21.9x volume spike in the final hour confirms strong institutional participation driving the breakout, and the price is holding at the 7-day high with a steep, sustained upward momentum over the last 6 hours."
+},
+"loose|2026-08-21T15:00:00+00:00|BCH/USD": {
+"take": false,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, but the recent 1-hour close is lower than the previous close, triggering the sell condition immediately after entry."
+},
+"loose|2026-08-21T16:00:00+00:00|BCH/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (27.5x average) coinciding with the acceleration of the move, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-08-21T18:00:00+00:00|BCH/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has stalled and reversed from its recent high with a sharp drop in volume, indicating the momentum is exhausted and the risk of a pullback outweighs the potential for continuation."
+},
+"loose|2026-08-21T19:00:00+00:00|BCH/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed down (-3.1%) and the price is already 4.6% below its 7-day high, indicating the momentum has stalled and the strategy's exit condition is imminent."
+},
+"loose|2026-08-21T21:00:00+00:00|AAVE/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended significantly (+10.2% in 6h) and is at the 7-day high, while the last 12 hours show near-zero volume, indicating the move is driven by a single spike that has likely exhausted its momentum and is prone to a reversal rather than continuation."
+},
+"loose|2026-08-21T22:00:00+00:00|SHIB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive recent spike (+14.2% in 6h) supported by a significant volume surge (10.8x average) in the last hour, indicating strong momentum and potential continuation rather than a dead-end spike."
+},
+"loose|2026-08-22T00:00:00+00:00|AAVE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive recent volume spike (9.6x average) and a strong, sustained upward trend over the last 24 hours, indicating high momentum and institutional interest that supports continuation."
+},
+"loose|2026-08-22T06:00:00+00:00|POL/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already retraced significantly from the recent high (127.3 to 121.9), indicating momentum is stalling, and the extreme volume spike in the second-to-last hour suggests a potential blow-off top or distribution rather than sustained continuation."
+},
+"loose|2026-08-22T07:00:00+00:00|POL/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended significantly (+18.9% in 6h) and is at the 7-day high, leaving little room for the required +2% continuation to cover fees, while the recent volume spike is followed by a sharp drop in activity, indicating potential exhaustion."
+},
+"loose|2026-08-22T08:00:00+00:00|POL/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is at its 7-day high with a massive volume spike that has already collapsed to near zero, indicating the move is likely exhausted and the market is weak."
+},
+"loose|2026-08-22T09:00:00+00:00|POL/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The last hourly bar closed down (-4.9%), which triggers the immediate sell condition, and the recent volume spike has dried up to near zero, indicating the momentum has stalled."
+},
+"loose|2026-08-23T10:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price surge is driven by a massive spike in volume (1.8x average) that has already decayed to 0.9x, indicating the momentum is fading rather than building, and the price is still significantly below its 7-day high."
+},
+"loose|2026-08-23T11:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price surge is driven by a sharp drop in volume (near zero in the last 3 hours), indicating a lack of sustained buying pressure and high risk of a reversal."
+},
+"loose|2026-08-23T12:00:00+00:00|AAVE/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent spike is driven by a single anomalous volume spike (2.4x) followed by near-zero activity, indicating a lack of sustained momentum and high risk of a pullback."
+},
+"loose|2026-08-23T13:00:00+00:00|AAVE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive recent acceleration (+16.5% in 6h) supported by a significant volume spike (2.5x average) in the last hour, indicating strong momentum and potential continuation rather than a top."
+},
+"loose|2026-08-23T15:00:00+00:00|AAVE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The recent 11.6% surge is supported by a massive 9.2x volume spike and a strong 61% 7-day trend, indicating high momentum and liquidity rather than a low-volume pump."
+},
+"loose|2026-08-23T17:00:00+00:00|AAVE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, despite recent pullback, suggests continuation likely."
+},
+"loose|2026-08-24T12:00:00+00:00|BCH/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp drop from the 7-day high followed by a volatile, low-volume bounce that lacks the sustained momentum required to overcome fees and slippage costs."
+},
+"loose|2026-08-25T00:00:00+00:00|SOL/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a sharp acceleration in the last hour (+2.8%) and a significant volume spike (5.2x average) confirming the breakout, while the market is broadly bullish."
+},
+"loose|2026-08-26T23:00:00+00:00|SOL/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with price at 7-day high, accelerating volume, and broad market strength supports continuation despite recent chop."
+},
+"loose|2026-08-27T08:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp pullback from the recent high (104.9 to 104.1) with zero volume in the last 5 hours, indicating a lack of momentum and potential exhaustion rather than continuation."
+},
+"loose|2026-08-27T09:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action shows a sharp pullback from the recent high (104.7 to 103.3) with zero volume in the last 5 hours, indicating a lack of momentum and potential exhaustion rather than continuation."
+},
+"loose|2026-08-27T14:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action shows a sharp spike followed by a significant pullback from the recent high, indicating momentum is stalling and the risk of an immediate lower close outweighs the potential for continuation."
+},
+"loose|2026-08-27T15:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp spike followed by a significant pullback from the recent high, and the volume data indicates a lack of sustained participation to support continuation."
+},
+"loose|2026-08-27T16:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action shows a parabolic spike with no volume support, and the coin is down 14% from its 7-day high, indicating a likely mean-reversion rather than a continuation."
+},
+"loose|2026-08-27T17:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed down (-3.2%) and the price is already 16.9% below its 7-day high, indicating the momentum has stalled and the strategy's exit condition is already met."
+},
+"loose|2026-08-27T18:00:00+00:00|WIF/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last 4 hours show a sharp pullback from the 6-hour high (116.8 to 111.3) with negligible volume, indicating the momentum has stalled and the entry is chasing a failed breakout."
+},
+"loose|2026-08-29T01:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent +5.6% spike is driven by a single anomalous volume spike (12.8x) followed by a massive drop in price and near-zero volume, indicating a failed breakout or wash trade rather than sustained momentum."
+},
+"loose|2026-08-29T02:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent +7.2% spike is driven by a single anomalous 1-hour candle (104.0 to 118.1) followed by an immediate crash back to 100.1, indicating a failed breakout or manipulation rather than sustained momentum, and the low volume in the preceding hours suggests poor liquidity for the move to continue."
+},
+"loose|2026-08-29T05:00:00+00:00|TRUMP/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price spike is driven by a single isolated volume spike that has since vanished, and the last two hourly bars show a pullback from the high, indicating the momentum is stalling rather than continuing."
+},
+"loose|2026-08-29T16:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price spike is driven by a massive volume outlier (3.4x average) in the final hour, indicating a potential one-off spike or wash trade rather than sustained momentum, and the price is already 1.8% below its 7-day high, suggesting limited upside room for the strategy's add-on logic."
+},
+"loose|2026-08-29T17:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single anomalous volume spike (3.4x) followed by immediate decay, and the price has already retraced 2.2% from its high, indicating the momentum is stalling rather than continuing."
+},
+"loose|2026-08-29T18:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price spike is driven by a massive volume spike (3.4x average) that has since collapsed to near-zero, indicating the move is likely a one-off liquidity event or wash trade rather than sustained momentum, making continuation unlikely."
+},
+"loose|2026-08-29T19:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price surge is driven by a single isolated volume spike (3.4x) followed by immediate decay to near-zero, indicating a lack of sustained market interest and high risk of a pullback."
+},
+"loose|2026-08-30T03:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a recent breakout to new highs, supported by a significant volume spike in the last hour and a clean upward trend over the last 24 hours."
+},
+"loose|2026-08-30T06:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a recent volume spike (2.1-2.7x average) supporting the +6.3% move, and price is near its 7-day high, indicating a fresh breakout rather than a retracement."
+},
+"loose|2026-08-30T12:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a fresh breakout to new highs, supported by a significant volume spike in the last two hours and a favorable market breadth, indicating high probability of continuation."
+},
+"loose|2026-08-30T14:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed lower (-0.7%), which triggers the immediate sell condition, and the recent volume spike has dried up to 0.2x average, indicating the momentum is stalling rather than continuing."
+},
+"loose|2026-08-30T15:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly close is lower than the previous one, triggering the immediate sell condition, and the recent volume spike has dried up to near-zero levels, indicating the momentum is exhausted."
+},
+"loose|2026-08-30T16:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a recent volume spike (3.3x average) supporting the +8.5% move, and the price is at the 7-day high, indicating fresh breakout potential rather than a retracement."
+},
+"loose|2026-08-31T19:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price surge is driven by a single anomalous volume spike (27.2x average) followed by near-zero activity, indicating a lack of sustained market interest and high risk of a reversal rather than continuation."
+},
+"loose|2026-08-31T20:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price spike is driven by a massive, isolated volume spike (26.2x average) that is not supported by broader market momentum or sustained trading activity, indicating a likely one-off pump or manipulation rather than a sustainable trend."
+},
+"loose|2026-08-31T21:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The extreme volume spike (87x average) combined with the price being exactly at the 7-day high suggests a potential blow-off top or liquidation event rather than a sustainable momentum continuation, making the risk of an immediate reversal too high for a short-term momentum strategy."
+},
+"loose|2026-08-31T22:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended +22% in 6 hours and is at the 7-day high, leaving no room for the required +2% continuation to cover fees, while the volume spike is a single anomalous bar followed by near-zero activity, indicating a likely one-shot pump rather than sustained momentum."
+},
+"loose|2026-08-31T23:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended +16% in 6 hours and is at the 7-day high, leaving no room for the required +2% continuation to cover fees, while the volume spike is a single anomalous outlier followed by near-zero activity, indicating a likely one-shot pump rather than sustained momentum."
+},
+"loose|2026-09-01T00:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended +23.8% in 6 hours and is at the 7-day high, leaving no room for the required +2% continuation to cover fees, while the volume spike is a single outlier followed by a sharp drop, indicating a likely blow-off top rather than a sustainable trend."
+},
+"loose|2026-09-01T01:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price is already at the 7-day high with a sharp spike in volume, indicating a potential blow-off top rather than a sustainable momentum continuation, and the recent hourly closes show a pullback from the peak."
+},
+"loose|2026-09-01T02:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last three hourly bars show a clear downward trend (-3.9% from the recent peak) with negligible volume, indicating the momentum has stalled and the strategy's exit condition is imminent."
+},
+"loose|2026-09-01T05:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (17.2x average) coinciding with the breakout, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-09-01T09:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last two hourly bars closed lower (-2.2% from the 7-day high) and the recent volume spike has already faded, indicating the momentum is stalling rather than continuing."
+},
+"loose|2026-09-01T10:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price action shows a sharp pullback from the 7-day high with declining volume, indicating momentum is stalling rather than continuing, which fails the requirement for sustained upward movement to cover fees."
+},
+"loose|2026-09-01T11:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a recent breakout to new highs, supported by a significant volume spike (11.4x average) in the last few hours, indicating institutional interest and potential continuation despite the broader market weakness."
+},
+"loose|2026-09-02T02:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price is already at the 7-day high with no volume expansion to support continuation, and the broader market is declining, making a pullback likely before any further upside."
+},
+"loose|2026-09-02T04:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a massive 5.3x volume spike on the final hour and price at the 7-day high, indicating fresh breakout fuel rather than a stale move."
+},
+"loose|2026-09-02T06:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a recent volume spike (5.2x average) and price holding near the 7-day high suggests the move is driven by fresh demand rather than a stale pump, making continuation likely enough to cover the 0.6% round-trip cost."
+},
+"loose|2026-09-02T16:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended significantly (+10.1%) and is at the 7-day high, leaving little room for the required +2% continuation to cover fees, while the recent volume spike is isolated and the broader market is flat."
+},
+"loose|2026-09-02T17:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended significantly (+13.6%) and is flat on the last bar, indicating the momentum is stalling rather than continuing, which fails the requirement for the move to keep going for several more hours to cover fees."
+},
+"loose|2026-09-02T18:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended significantly (+14.3%) and is at the 7-day high, leaving no room for the required +2% continuation to cover fees, while the recent volume spike is isolated and the last few bars show stalling momentum."
+},
+"loose|2026-09-02T20:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price action shows a sharp pullback from the 7-day high with the last three hourly closes declining, indicating momentum is stalling despite the 6-hour gain."
+},
+"loose|2026-09-03T04:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price action shows a sharp pullback from the 7-day high with extremely low volume, indicating weak momentum and high risk of reversal rather than continuation."
+},
+"loose|2026-09-03T07:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended significantly (+10.2% in 6h) and is consolidating near highs with a recent pullback, indicating the initial momentum may be exhausted rather than just starting."
+},
+"loose|2026-09-03T09:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp spike into resistance with no sustained volume support, and the 24-hour return is flat, indicating the move is likely a one-off pump rather than a trending momentum signal."
+},
+"loose|2026-09-03T11:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single anomalous volume spike (9.1x) followed by a sharp drop in volume (0.1x), indicating a likely one-off pump or wash trade rather than sustained momentum, and the price is already -2.1% from the 7-day high, suggesting the move may be stalling."
+},
+"loose|2026-09-03T12:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a recent breakout from a 24-hour consolidation, supported by a massive 9x volume spike in the last hour and a favorable market breadth, indicating high probability of continuation despite the 0.6% round-trip cost."
+},
+"loose|2026-09-03T14:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced 2.4% from its 7-day high and the last two hourly closes show a pullback, indicating the momentum is stalling rather than continuing."
+},
+"loose|2026-09-03T15:00:00+00:00|PEPE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The massive 6-hour spike (+11.6%) is supported by extreme volume spikes (13.3x and 20.8x average) and a strong upward trend in the last 4 hours, indicating a fresh breakout rather than a retracement."
+},
+"loose|2026-09-03T17:00:00+00:00|ADA/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a sharp recent breakout (+7.8% in 6h) supported by a significant volume spike (8x average) in the last hour, indicating fresh buying pressure rather than a stale move."
+},
+"loose|2026-09-03T19:00:00+00:00|DOGE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 6-hour surge is driven by a massive volume spike (29.7x average) and the price is consolidating near the 7-day high, indicating strong momentum rather than a one-off spike."
+},
+"loose|2026-09-03T22:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last 12 hours show extreme volume decay (mostly near zero) and the price has stalled/consolidated below the recent high, indicating the momentum is exhausted and the 5% move is likely a one-off spike rather than a sustained trend."
+},
+"loose|2026-09-04T23:00:00+00:00|DOT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price has broken out to a 7-day high with a sharp acceleration in the last hour (+3.3%) accompanied by a massive 6.6x volume spike, indicating strong momentum and institutional interest that is likely to continue rather than reverse."
+},
+"loose|2026-09-05T06:00:00+00:00|LTC/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price is already at the 7-day high with no volume spike to support continuation, and the recent hourly closes show a decelerating momentum (1.6% last hour vs 5.1% over 6 hours), making it unlikely to sustain the +2% moves needed to cover fees."
+},
+"loose|2026-09-05T09:00:00+00:00|SUSHI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price spike is driven by a single isolated volume spike (0.9x) after a prolonged period of zero volume, indicating a lack of sustained market interest and high risk of a reversal."
+},
+"loose|2026-09-05T10:00:00+00:00|SUSHI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price surge is driven by a single isolated volume spike (0.9x average) after a prolonged period of zero volume, indicating a lack of sustained market participation and high risk of a reversal."
+},
+"loose|2026-09-05T16:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 3.5x volume spike on the final +5.8% hourly candle indicates strong institutional participation and momentum continuation, supported by the coin being at its 7-day high and leading the market breadth."
+},
+"loose|2026-09-05T21:00:00+00:00|ARB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (28x average) in the last hour, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-09-06T00:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended significantly (+34.8% in 6h) and is at the 7-day high, leaving little room for the required +2% continuation to cover fees, while the recent volume spike has dried up and the last bar closed lower, signaling exhaustion."
+},
+"loose|2026-09-06T01:00:00+00:00|GRT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive 10.2x volume spike in the last hour, indicating strong institutional interest and momentum continuation rather than a one-off pump."
+},
+"loose|2026-09-06T05:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has stalled at a local high with zero volume for the last 8 hours, indicating the momentum has exhausted and the risk of a reversal outweighs the potential for continuation."
+},
+"loose|2026-09-06T06:00:00+00:00|GRT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already extended significantly (+11.3% in 6h) and is at the 7-day high, leaving little room for the required +2% continuation to cover fees, while the recent volume spike (10x) suggests a potential blow-off top rather than a sustainable trend."
+},
+"loose|2026-09-06T07:00:00+00:00|GRT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed down (-3.5%), which triggers the immediate sell condition, and the recent volume spike was followed by a sharp retracement, indicating the momentum has already reversed."
+},
+"loose|2026-09-06T09:00:00+00:00|GRT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced significantly from the recent high (118.3 to 114.1), indicating momentum is stalling, and the last hour's volume is near zero, suggesting the move is not supported by fresh buying pressure."
+},
+"loose|2026-09-06T11:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price is already at the 7-day high with no headroom, and the recent volume spike (4.6x) followed by a sharp drop to 0.1x suggests the move is stalling or reversing rather than continuing."
+},
+"loose|2026-09-06T13:00:00+00:00|SUSHI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has stalled and reversed from its 7-day high with a recent sharp drop in the last few hours, indicating momentum is exhausted rather than continuing."
+},
+"loose|2026-09-06T15:00:00+00:00|LDO/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with no volume support over the last 11 hours, indicating a stalled move rather than a continuation, and the market is flat/down."
+},
+"loose|2026-09-06T16:00:00+00:00|BONK/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 51.2x volume spike in the final hour confirms strong institutional participation driving the breakout, and the price is holding above the recent 103.1-104.2 resistance zone with a clean upward trend, making continuation likely despite the flat market."
+},
+"loose|2026-09-06T20:00:00+00:00|LINK/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The massive 46.3x volume spike in the final hour accompanying a +5.7% hourly gain and a breakout to the 7-day high indicates strong institutional participation and momentum continuation, outweighing the fee drag."
+},
+"loose|2026-09-06T22:00:00+00:00|LINK/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single anomalous volume spike (45.6x average) followed by a sharp pullback, indicating a likely one-off liquidity event or wash trade rather than sustained momentum, and the price has already retraced significantly from the high."
+},
+"loose|2026-09-06T23:00:00+00:00|LINK/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 45.9x volume spike coinciding with the +7.5% move and price sitting at the 7-day high indicates strong institutional participation and breakout momentum, making continuation likely despite the recent pullback."
+},
+"loose|2026-09-07T01:00:00+00:00|LINK/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced significantly from the 7-day high and the last few hourly bars show a clear downward trend, indicating the momentum is stalling rather than continuing."
+},
+"loose|2026-09-07T12:00:00+00:00|LTC/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (7.2x average) on the final bar, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-09-07T14:00:00+00:00|DOT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a fresh breakout to new highs, supported by a massive 18x volume spike in the last hour and a clean upward trend, indicating high probability of continuation despite the recent pullback."
+},
+"loose|2026-09-07T18:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed lower (-0.5%), which triggers the immediate sell condition, and the recent price action shows a pullback from the high with no fresh volume support to justify continuation."
+},
+"loose|2026-09-08T14:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price is already at the 7-day high with no headroom, and the recent volume spike (6.2x) followed by a sharp drop in the last hour suggests the move is stalling or reversing rather than continuing."
+},
+"loose|2026-09-08T15:00:00+00:00|DOT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (6.2x average) on the final hour, indicating strong institutional interest and momentum continuation rather than a one-off pump."
+},
+"loose|2026-09-08T17:00:00+00:00|DOT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a recent breakout to new highs, supported by a significant volume spike (6.1x average) in the last hour, and the market is broadly bullish with 67% of coins up."
+},
+"loose|2026-09-08T19:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, but BTC is weak and the last hour closed lower, risking an immediate stop-out."
+},
+"loose|2026-09-08T20:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with a flat last hour, indicating the momentum has stalled and the risk of an immediate pullback outweighs the potential for continuation."
+},
+"loose|2026-09-11T13:00:00+00:00|ETH/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price has broken out significantly from a 24-hour consolidation with a massive 8.7x volume spike in the final hour, indicating strong institutional participation and momentum continuation rather than a one-off spike."
+},
+"loose|2026-09-12T07:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a clear distribution phase with lower highs and lower lows over the last 12 hours, indicating the initial spike has already reversed and momentum is fading despite the recent volume spike."
+},
+"loose|2026-09-13T13:00:00+00:00|XTZ/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The massive 43x volume spike on the final bar confirms a genuine breakout from a 7-day high, supported by strong 24h/7d momentum and a clean upward price trend, making continuation highly likely despite the recent pullback."
+},
+"loose|2026-09-13T15:00:00+00:00|FIL/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The extreme volume spike (107.5x) combined with the price already being at the 7-day high and a sharp acceleration in the last hour suggests a blow-off top or distribution event rather than a sustainable momentum continuation, making the risk of an immediate reversal too high for a short-term moment"
+},
+"loose|2026-09-13T16:00:00+00:00|FIL/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already +20.9% above the entry point, meaning the strategy would be buying at the top of the move with no room for the required +2% continuation to cover fees, and the volume spike is concentrated in the last two hours indicating a potential blow-off top rather than sustained momentum."
+},
+"loose|2026-09-13T17:00:00+00:00|FIL/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The last hourly bar closed lower (-1.8%), which triggers the strategy's immediate sell condition, making a new entry invalid."
+},
+"loose|2026-09-13T18:00:00+00:00|FIL/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive, sustained volume spike (42x-52x average) over the last 3 hours, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-09-13T20:00:00+00:00|FIL/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already retraced significantly from its 7-day high and the last few hourly bars show consolidation rather than continuation, making the risk of an immediate lower close outweigh the potential for further upside."
+},
+"loose|2026-09-14T18:00:00+00:00|XRP/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a massive volume spike (9.5x and 8.7x) confirming the breakout, and the price is at the 7-day high, indicating fresh buying pressure rather than a retracement."
+},
+"loose|2026-09-14T20:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent spike is driven by a single anomalous volume spike (17.6x) followed by a sharp drop in activity, indicating a likely one-off pump or wash trade rather than sustained momentum, and the price is still significantly below its 7-day high."
+},
+"loose|2026-09-16T20:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price spike is driven by a single anomalous volume spike (16.1x average) followed by a sharp drop in volume, indicating a likely one-off pump or wash trade rather than sustained momentum, and the price is already down 3.5% from its 7-day high."
+},
+"loose|2026-09-16T23:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single anomalous volume spike (16.4x) followed by a complete volume collapse, indicating a one-off liquidity event rather than sustained momentum, and the price is already near its 7-day high with limited upside room."
+},
+"loose|2026-09-17T00:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price surge is driven by a single anomalous volume spike (17.8x average) followed by a complete volume collapse, indicating a one-off liquidity event rather than sustained momentum, and the price has already retraced from its high."
+},
+"loose|2026-09-17T01:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with no headroom, and the recent volume spike was followed by a sharp drop in activity, indicating the momentum is likely exhausted rather than continuing."
+},
+"loose|2026-09-17T03:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action shows a sharp pullback from the recent high (106.0 to 104.7) with negligible volume, indicating the momentum has stalled and the 5% gain is likely a dead leg rather than a continuation."
+},
+"loose|2026-09-17T04:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with no volume spike to support continuation, and the recent hourly closes show a stalling pattern (106.8 -> 107.3) rather than a strong momentum breakout."
+},
+"loose|2026-09-17T13:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, but the last hourly close was down (-4.6%), which triggers the sell condition immediately, making entry unprofitable."
+},
+"loose|2026-09-17T15:00:00+00:00|ONDO/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action shows a sharp spike followed by immediate stalling and pullback, indicating exhaustion rather than momentum, and the volume spike is isolated with no sustained follow-through to support continuation."
+},
+"loose|2026-09-17T16:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (28.4x average) in the last hour, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-09-17T19:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last two hourly bars closed lower (-2.5% and -2.1%), triggering the strategy's sell condition, and the recent volume spike has already faded significantly."
+},
+"loose|2026-09-17T20:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price action shows a sharp pullback from the 7-day high with declining volume and a negative 1-hour close, indicating momentum is stalling rather than continuing."
+},
+"loose|2026-09-17T21:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The signal is a trap: the massive +8% move is driven by a single 26.8x volume spike that has since collapsed to 0.2x average, indicating the momentum has already exhausted and the price is stalling near highs with no follow-through."
+},
+"loose|2026-09-18T02:00:00+00:00|ARB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (21.4x average) in the final hour, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-09-18T05:00:00+00:00|ARB/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already retraced 6.1% from its 7-day high and the last hourly close is flat, indicating the momentum has stalled and the risk of an immediate lower close outweighs the potential for continuation."
+},
+"loose|2026-09-18T06:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive recent volume spike (13x average) and a strong, sustained upward trend over the last 24 hours, indicating high momentum and potential for continuation rather than a top."
+},
+"loose|2026-09-18T16:00:00+00:00|SOL/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume (8.5x average) and price near 7-day high suggests continuation rather than exhaustion."
+},
+"loose|2026-09-18T19:00:00+00:00|SOL/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, supported by broad market rally, suggests continuation rather than exhaustion."
+},
+"loose|2026-09-19T01:00:00+00:00|XTZ/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The extreme volume spike (51.3x) occurring exactly at the signal time, combined with a flat 6-hour BTC market and a price already at its 7-day high, indicates a potential distribution or liquidity event rather than a sustainable momentum continuation."
+},
+"loose|2026-09-19T02:00:00+00:00|XTZ/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is at its 7-day high with a massive spike in volume (50.6x average) in the last hour, indicating a potential blow-off top or distribution rather than a sustainable momentum continuation."
+},
+"loose|2026-09-19T03:00:00+00:00|FIL/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price surge is driven by a massive volume spike (8.8x average) in the final hour, indicating a potential blow-off top or liquidation event rather than sustainable momentum, and the price is already 2.6% below its 7-day high, suggesting the move may be exhausted."
+},
+"loose|2026-09-19T04:00:00+00:00|XTZ/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed down (-3.0%) and the price is already 3% below its 7-day high, indicating the momentum has stalled and the strategy's exit condition is already met."
+},
+"loose|2026-09-19T09:00:00+00:00|AVAX/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already extended significantly (+13.2% in 24h) and is consolidating near highs with a recent pullback, indicating the momentum is likely exhausted rather than just starting, making the risk of a reversal high."
+},
+"loose|2026-09-19T10:00:00+00:00|AVAX/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a recent volume spike (15.1x) and price near 7-day highs, indicating fresh buying pressure rather than a stale move."
+},
+"loose|2026-09-19T18:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price is already at the 7-day high with no volume expansion to support continuation, and the recent sharp spike is likely to reverse rather than sustain momentum."
+},
+"loose|2026-09-19T19:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed lower (-0.7%), triggering the immediate sell condition, and the recent volume spike is isolated with no sustained follow-through to support continuation."
+},
+"loose|2026-09-19T21:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced 4.5% from its 7-day high and the last hourly bar closed down, indicating the momentum has stalled and the strategy's exit condition is imminent."
+},
+"loose|2026-09-20T00:00:00+00:00|AVAX/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume (13.2x average) and price at 7-day high, despite weak market conditions, indicating a high-probability continuation setup."
+},
+"loose|2026-09-20T11:00:00+00:00|AVAX/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already spiked to the 7-day high with a massive volume spike, indicating a likely blow-off top rather than a sustainable momentum continuation, and the recent hourly closes show significant volatility and pullbacks that increase the risk of an immediate lower close."
+},
+"loose|2026-09-20T12:00:00+00:00|AVAX/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly close is lower than the previous one, triggering the immediate sell condition, and the recent price action shows a sharp pullback from the 7-day high with no sustained momentum to justify entry."
+},
+"loose|2026-09-20T13:00:00+00:00|AVAX/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already extended significantly (+10.3% in 6h) and is at the 7-day high, leaving little room for the required +2% continuation moves to overcome the 0.6% round-trip cost, while the recent volume spike suggests potential exhaustion rather than fresh momentum."
+},
+"loose|2026-09-20T14:00:00+00:00|AVAX/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already extended significantly (+12.3% in 6h) and is at the 7-day high, leaving little room for the required +2% continuation moves to overcome the 0.6% round-trip cost, while the recent volume spike suggests potential exhaustion rather than fresh momentum."
+},
+"loose|2026-09-20T15:00:00+00:00|AVAX/USD": {
+"take": false,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, but the sharp pullback from 106.5 to 100.4 in the last 6 hours suggests a potential reversal or consolidation rather than a clean continuation, making the risk of an immediate lower close significant."
+},
+"loose|2026-09-20T16:00:00+00:00|AVAX/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The recent 6-hour surge is supported by a massive 34x volume spike in the final hour and a strong 7-day trend, indicating fresh institutional interest rather than a stale pump, despite the minor 1-hour pullback."
+},
+"loose|2026-09-20T18:00:00+00:00|RENDER/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced significantly from the recent spike (110 to 105.2) and the last hourly bar closed lower, triggering the strategy's sell condition, indicating the momentum has stalled and the risk of further decline outweighs the potential for continuation."
+},
+"loose|2026-09-20T19:00:00+00:00|DOT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a sharp +6% surge driven by a massive 7x volume spike in the last 3 hours, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-09-21T10:00:00+00:00|ARB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 8.2x volume spike coinciding with the +6.3% hourly breakout from a 7-day high indicates strong institutional participation and momentum continuation, outweighing the round-trip fee risk."
+},
+"loose|2026-09-21T12:00:00+00:00|ARB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (7.9x average) coinciding with the breakout, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-09-21T14:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already spiked 16.4% in 6 hours and is at the 7-day high, leaving no room for the required +2% continuation to cover fees, while the volume spike is isolated and the market is broadly bullish rather than confirming a specific breakout."
+},
+"loose|2026-09-21T15:00:00+00:00|PEPE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price has just broken out to a new 7-day high with a massive volume spike (5.5x average) in the last hour, indicating strong institutional participation and momentum continuation rather than a one-off spike."
+},
+"loose|2026-09-21T17:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last two hourly bars closed lower (-3.2% and -0.4%), triggering the strategy's sell condition, and the massive volume spike coincides with a sharp pullback from the high, indicating distribution rather than continuation."
+},
+"loose|2026-09-21T18:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already spiked 16.6% in 6 hours and is now consolidating with a -1.8% pullback from the high, indicating the initial momentum has likely exhausted rather than continuing."
+},
+"loose|2026-09-21T19:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly close is lower than the previous close, triggering the strategy's immediate sell condition, and the recent volume spike is followed by a sharp pullback indicating exhaustion rather than continuation."
+},
+"loose|2026-09-21T20:00:00+00:00|DOGE/USD": {
+"take": false,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume (18.3x average) and price near 7-day high suggests continuation, but the recent 1h close (+1.7%) is below the 2% threshold required to trigger the add-on logic, indicating potential stalling."
+},
+"loose|2026-09-21T23:00:00+00:00|RENDER/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price is already at the 7-day high with no volume support in the last 12 hours, indicating the move is likely exhausted and prone to a pullback rather than continuation."
+},
+"loose|2026-09-22T03:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced significantly from its 7-day high and the recent volume spike is isolated, indicating the momentum is likely exhausted rather than continuing."
+},
+"loose|2026-09-22T05:00:00+00:00|PEPE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced significantly from the 7-day high and the last few hourly bars show a choppy, consolidating pattern rather than a sustained momentum breakout, making the risk of an immediate downward close too high for the strategy's tight stop-loss."
+},
+"loose|2026-09-22T12:00:00+00:00|BCH/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with a massive spike driven by a single volume outlier, indicating a likely blow-off top rather than a sustainable trend continuation."
+},
+"loose|2026-09-22T13:00:00+00:00|BCH/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The massive 6-hour spike (+22%) is supported by an extreme volume surge (37.5x average) and the price is already at the 7-day high, indicating strong momentum and institutional interest rather than a retracement."
+},
+"loose|2026-09-22T15:00:00+00:00|BCH/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already spiked 20% in the last 6 hours and is currently at the 7-day high, leaving no room for the required +2% continuation to cover fees, while the volume spike has already collapsed to 1.1x average, indicating the momentum is exhausted."
+},
+"loose|2026-09-22T16:00:00+00:00|BCH/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already spiked 21% in the last 6 hours and is currently consolidating near highs with a recent -0.2% hourly close, indicating the momentum is stalling and the risk of an immediate reversal outweighs the potential for continuation."
+},
+"loose|2026-09-22T17:00:00+00:00|BCH/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (56.9x average) coinciding with the breakout, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-09-22T20:00:00+00:00|BCH/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (47.9x average) coinciding with the breakout, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-09-22T22:00:00+00:00|UNI/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The massive 10.4x volume spike on the final bar confirms strong institutional participation driving the breakout, and the price is at the 7-day high with no resistance overhead, making continuation highly likely despite the recent chop."
+},
+"loose|2026-09-23T05:00:00+00:00|ARB/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a massive 10.6x volume spike on the final bar and price holding near the 7-day high, indicating fresh institutional interest rather than a fading pump."
+},
+"loose|2026-09-23T09:00:00+00:00|BCH/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price is consolidating near the 7-day high with a recent pullback from the peak, and the sharp volume spike 3 hours ago has not been followed by sustained price momentum, indicating a high risk of reversal rather than continuation."
+},
+"loose|2026-09-24T02:00:00+00:00|LTC/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The massive 7x volume spike on the final bar confirms strong institutional participation driving the breakout, and the price is at the 7-day high with no resistance overhead, making continuation highly likely despite the recent chop."
+},
+"loose|2026-09-24T06:00:00+00:00|LTC/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced significantly from the 7-day high and the last two hourly bars show a pullback, indicating the momentum is stalling rather than continuing."
+},
+"loose|2026-09-24T07:00:00+00:00|LTC/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The 6-hour surge is driven by a massive volume spike (6.6x average) and the price is holding near its 7-day high, indicating strong momentum and liquidity rather than a low-volume pump."
+},
+"loose|2026-09-24T12:00:00+00:00|ONDO/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already spiked 6.1% in the last hour, leaving minimal room for the required +2% continuation to cover fees, while the broader market is down and volume is thin."
+},
+"loose|2026-09-24T13:00:00+00:00|ONDO/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The massive 12x volume spike in the final hour confirms strong institutional participation driving the breakout, and the price is at a 7-day high with no overhead resistance, making continuation highly likely despite the recent pullback."
+},
+"loose|2026-09-24T19:00:00+00:00|LINK/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed lower (-1.3%), which triggers the strategy's immediate sell condition, making a new entry invalid."
+},
+"loose|2026-09-24T20:00:00+00:00|LINK/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed lower (-0.7%), which triggers the strategy's immediate sell condition, making entry impossible and the setup already failing."
+},
+"loose|2026-09-25T07:00:00+00:00|ONDO/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The massive 108.8x volume spike in the final hour confirms a genuine breakout from a 7-day high, supported by strong momentum and a clean upward price trend, making continuation highly likely despite the recent pullback."
+},
+"loose|2026-09-25T09:00:00+00:00|RENDER/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with a massive spike in the last hour, indicating the move is likely exhausted and prone to a reversal rather than continuation."
+},
+"loose|2026-09-25T10:00:00+00:00|RENDER/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last two hourly bars show a sharp pullback from the recent high, and the extreme volume spike in the second-to-last hour suggests a potential distribution or washout rather than sustained momentum."
+},
+"loose|2026-09-25T11:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp spike into resistance with no sustained volume support, and the coin is significantly below its 7-day high, indicating a likely mean-reversion rather than a continuation trend."
+},
+"loose|2026-09-25T12:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price is down 8.2% from its 7-day high and the last two hours show a sharp spike with no sustained volume support, indicating a likely dead-cat bounce rather than a continuation trend."
+},
+"loose|2026-09-25T13:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed lower (-1.6%), which triggers the immediate sell condition, and the sharp spike in volume is followed by a drop, indicating a likely failed breakout rather than a continuation."
+},
+"loose|2026-09-25T22:00:00+00:00|LTC/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price spike is driven by a massive volume spike (2.0x average) that has since dried up to near-zero, indicating the move is likely a one-off pump or distribution rather than sustained momentum, and the coin is already down from its 7-day high."
+},
+"loose|2026-09-26T14:00:00+00:00|FIL/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive +6.1% hourly surge and significant volume spike (5.9x average) in the last few hours, indicating strong momentum and liquidity to support the strategy's add-on requirements."
+},
+"loose|2026-09-26T18:00:00+00:00|FIL/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last two hourly bars closed significantly lower (-4.2% and -1.8%), indicating the momentum has already reversed and the strategy's exit condition is imminent."
+},
+"loose|2026-09-27T19:00:00+00:00|GRT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive 7.4x volume spike in the final hour, indicating strong institutional participation and momentum continuation rather than a one-off spike."
+},
+"loose|2026-09-27T21:00:00+00:00|GRT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already retraced significantly from its recent high (128.6 to 120.5), indicating the momentum is stalling and the risk of an immediate lower close outweighs the potential for continuation."
+},
+"loose|2026-09-27T22:00:00+00:00|GRT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed down (-2.0%) and the price is already 2% below its 7-day high, indicating the momentum has stalled and the strategy's exit condition is already met."
+},
+"loose|2026-09-27T23:00:00+00:00|GRT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already spiked 21% in 6 hours and is consolidating near the top with a recent pullback, indicating the momentum is likely exhausted rather than continuing."
+},
+"loose|2026-09-28T00:00:00+00:00|GRT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed down (-5.0%) and the price is already 5% below its 7-day high, indicating the momentum has stalled and the strategy's exit condition is already met."
+},
+"loose|2026-09-28T01:00:00+00:00|GRT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced significantly from its recent high (132.1 to 128.6) and the last few hours show low volume and choppy price action, indicating the momentum is stalling rather than continuing."
+},
+"loose|2026-09-28T03:00:00+00:00|SKY/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The recent 21-22x volume spike confirms strong institutional participation driving the breakout, and the price is holding above the 108.5 level despite a pullback, indicating a strong uptrend with momentum likely to continue."
+},
+"loose|2026-09-28T12:00:00+00:00|LINK/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The massive 11.8x volume spike in the final hour coincides with a sharp breakout from a 7-day low, indicating strong institutional participation and momentum continuation rather than a one-off spike."
+},
+"loose|2026-09-28T15:00:00+00:00|LINK/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced significantly from the recent spike (104.7 to 102.5) and the last hourly close is lower than the previous, indicating the momentum is stalling and the strategy's exit condition is imminent."
+},
+"loose|2026-09-28T16:00:00+00:00|LINK/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already spiked to the 7-day high and the last hourly close is significantly lower than the previous one, indicating the momentum has stalled and the strategy's exit condition is already met."
+},
+"loose|2026-09-28T17:00:00+00:00|LINK/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed lower (-0.8%), which triggers the strategy's immediate sell condition, making a new entry invalid."
+},
+"loose|2026-09-28T18:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price action shows a sharp spike into resistance near the 7-day high with no sustained volume support, indicating a likely dead-end rather than a continuation."
+},
+"loose|2026-09-28T19:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single anomalous volume spike (16.3x) followed by a sharp pullback and low volume, indicating a likely one-off pump rather than sustained momentum, especially with the 1-hour close down and weak market breadth."
+},
+"loose|2026-09-28T20:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single anomalous volume spike (16.2x) followed by a sharp pullback and low follow-through volume, indicating a likely one-off pump rather than a sustainable trend."
+},
+"loose|2026-09-28T21:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price action shows a sharp pullback from the 6-hour high (104.1 to 103.1) with declining volume, indicating momentum is stalling rather than continuing, which fails the requirement for the move to keep going for several more hours to cover fees."
+},
+"loose|2026-09-28T22:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp pullback from the recent high (103.8 to 102.2) with declining volume, indicating momentum is stalling rather than continuing, which fails the requirement for sustained upward movement to cover fees."
+},
+"loose|2026-09-28T23:00:00+00:00|CRV/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, despite weak market conditions, suggests continuation potential."
+},
+"loose|2026-09-29T01:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has stalled near its 7-day high with a recent pullback and low volume, indicating the momentum is exhausted rather than continuing."
+},
+"loose|2026-09-29T03:00:00+00:00|CRV/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume (14.4x average) and price near 7-day high suggests continuation despite flat BTC."
+},
+"loose|2026-09-29T06:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, but the recent 1-hour close was lower, triggering the sell condition immediately after entry."
+},
+"loose|2026-09-29T07:00:00+00:00|AAVE/USD": {
+"take": false,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume (4.4x average) and price at 7-day high suggests continuation, but the sharp 1h gain (+4.9%) risks an immediate pullback close that would trigger the sell condition before the 25% add-on triggers."
+},
+"loose|2026-09-29T08:00:00+00:00|AAVE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a sharp acceleration in the last 3 hours (+11.9% to +14.4%) accompanied by a significant volume spike (4.4x average), indicating strong momentum and potential continuation rather than a top."
+},
+"loose|2026-09-29T10:00:00+00:00|AAVE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already extended significantly (+12.6%) and is trading near its 7-day high with a sharp drop in volume over the last few hours, indicating the momentum is likely exhausted rather than continuing."
+},
+"loose|2026-09-29T11:00:00+00:00|AVAX/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price is already at the 7-day high with a sharp spike in volume that has since collapsed to near-zero levels, indicating the momentum is likely exhausted and the risk of a reversal outweighs the potential for continuation."
+},
+"loose|2026-09-29T12:00:00+00:00|AAVE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, supported by broad market rally, suggests continuation despite recent pullback."
+},
+"loose|2026-09-29T14:00:00+00:00|SKY/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with a fresh breakout to new highs, significant volume spike confirming the move, and a favorable market breadth supporting continuation."
+},
+"loose|2026-09-30T09:00:00+00:00|CRV/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price surge is driven by a single isolated volume spike (1.1x) after a prolonged period of near-zero activity, indicating a lack of sustained market interest or liquidity to support the continuation of the move."
+},
+"loose|2026-09-30T12:00:00+00:00|BONK/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp pullback from the recent high (103.6 to 101.3) with negligible volume, indicating a lack of momentum and high risk of a continued decline rather than continuation."
+},
+"loose|2026-10-01T05:00:00+00:00|AAVE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price surge is driven by a single isolated volume spike (20.1x) followed by a complete volume collapse, indicating a one-off liquidity event rather than sustained momentum, and the price is already 3.8% below its 7-day high, suggesting the move is stalling."
+},
+"loose|2026-10-01T06:00:00+00:00|AAVE/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price surge is driven by a single isolated volume spike that has since dried up to near-zero levels, indicating the move lacks sustained participation and is likely to reverse rather than continue."
+},
+"loose|2026-10-01T20:00:00+00:00|SKY/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The signal is invalid because the last 11 hours of volume data are zero, indicating no actual trading activity or liquidity to support the price movement."
+},
+"loose|2026-10-02T04:00:00+00:00|AAVE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive +8.3% surge driven by a 2.5x volume spike in the final hour, indicating strong fresh momentum rather than a stale move."
+},
+"loose|2026-10-02T06:00:00+00:00|AAVE/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The recent +6.9% surge is supported by a significant volume spike (2.5x average) and the price is holding near its 7-day high, indicating strong momentum rather than a retracement."
+},
+"loose|2026-10-02T12:00:00+00:00|SKY/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with a flat recent hourly return (+0.8%) and extremely low volume (1.5x average only in the last hour), indicating the momentum has stalled and the risk of an immediate pullback outweighs the potential for continuation."
+},
+"loose|2026-10-02T13:00:00+00:00|SKY/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed down (-1.9%) and the price is already 1.9% below its 7-day high, indicating the momentum has stalled and the strategy's exit condition is imminent."
+},
+"loose|2026-10-02T14:00:00+00:00|SKY/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price action shows a sharp pullback from the 7-day high with declining volume and a negative 1-hour close, indicating momentum is stalling rather than continuing."
+},
+"loose|2026-10-02T16:00:00+00:00|SKY/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly close is lower than the previous close, triggering the immediate sell condition, and the recent volume spike has already faded to near-zero levels."
+},
+"loose|2026-10-03T13:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single isolated volume spike (4.0x) that has since collapsed to near-zero, indicating a lack of sustained momentum and high risk of a pullback."
+},
+"loose|2026-10-03T14:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single isolated volume spike (4.0x) followed by a complete collapse in activity (0.1x), indicating a one-off pump rather than sustained momentum, and the price is still significantly below its 7-day high."
+},
+"loose|2026-10-04T22:00:00+00:00|ADA/USD": {
+"take": false,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume (3.7x average) and price near 7-day high suggests continuation, but the sharp +5.8% move in 6 hours risks a pullback before the strategy can recoup fees."
+},
+"loose|2026-10-05T00:00:00+00:00|ADA/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price spike is driven by a massive volume spike that has already collapsed to near-zero, indicating the momentum has likely exhausted itself and the risk of an immediate reversal outweighs the potential for continuation."
+},
+"loose|2026-10-05T02:00:00+00:00|ADA/USD": {
+"take": true,
+"confidence": 85,
+"reason": "Strong momentum with accelerating volume and price near 7-day high, supported by broad market strength, suggests continuation rather than exhaustion."
+},
+"loose|2026-10-08T21:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single anomalous volume spike (9.2x) followed by immediate volume collapse, indicating a one-off liquidity event rather than sustained momentum, and the price is still significantly below its 7-day high with negative longer-term trends."
+},
+"loose|2026-10-08T22:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single anomalous volume spike (9.3x) followed by a sharp drop in activity, indicating a likely one-off pump or wash trade rather than sustained momentum, and the price is still significantly below its 7-day high."
+},
+"loose|2026-10-08T23:00:00+00:00|FIL/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent +7.8% surge is driven by a massive volume spike (14.5x average) following a sharp drop, indicating a potential reversal or washout rather than a sustainable momentum trend, especially with the last hour closing negative and price significantly below its 7-day high."
+},
+"loose|2026-10-09T00:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single anomalous volume spike (9.2x) followed by a sharp drop in activity, and the price is still significantly below its 7-day high, indicating a likely mean-reversion rather than a sustainable trend."
+},
+"loose|2026-10-09T01:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single anomalous volume spike (9.2x) followed by a sharp drop in activity, indicating a likely one-off pump or wash trade rather than sustained momentum, and the price is still significantly below its 7-day high."
+},
+"loose|2026-10-09T03:00:00+00:00|LDO/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by a single anomalous volume spike (40.2x) after a period of zero volume, indicating a potential wash trade or data error rather than genuine momentum, and the price is still significantly below its 7-day high with a negative 24h trend."
+},
+"loose|2026-10-09T04:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price surge is driven by a massive volume spike (4.5x average) that has since evaporated to near-zero levels, indicating the move is likely a one-time liquidity event rather than sustained momentum, and the coin is still significantly below its 7-day high."
+},
+"loose|2026-10-09T05:00:00+00:00|DOT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price action is a dead-cat bounce from a sharp drop, with volume drying out to near zero in the last 3 hours, indicating the momentum is exhausted and likely to reverse."
+},
+"loose|2026-10-09T15:00:00+00:00|BAT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive volume spike (56x average) in the last two hours, indicating strong institutional participation and momentum continuation rather than a one-off pump."
+},
+"loose|2026-10-09T19:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already retraced significantly from its recent high (137.6 to 133.0), indicating momentum is stalling and the risk of an immediate lower close outweighs the potential for continuation."
+},
+"loose|2026-10-09T21:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed lower (-1.4%), which triggers the immediate sell condition, and the recent volume spike has dried up to near zero, indicating the momentum is exhausted."
+},
+"loose|2026-10-10T00:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with no volume support, indicating the move is likely exhausted and prone to a reversal rather than continuation."
+},
+"loose|2026-10-10T01:00:00+00:00|ADA/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp spike into resistance with no sustained volume support, and the coin is significantly below its 7-day high, indicating a high probability of mean reversion rather than continuation."
+},
+"loose|2026-10-10T02:00:00+00:00|ADA/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp spike followed by immediate rejection and consolidation, indicating the momentum has stalled and is likely to reverse rather than continue."
+},
+"loose|2026-10-10T11:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with a massive 1-hour spike (+8.5%) that is likely to reverse, and the extreme volume spike at the very end of the window suggests a potential blow-off top rather than a sustainable trend continuation."
+},
+"loose|2026-10-10T23:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price spike is driven by extreme volume anomalies (91.3x and 8.8x averages) that suggest a wash trade or liquidity manipulation rather than organic momentum, and the price is already 3.7% below its 7-day high, indicating the trend is stalling."
+},
+"loose|2026-10-11T00:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly close is down 2.1% from the previous close, triggering the immediate sell condition, and the recent volume spike is followed by a sharp price drop indicating exhaustion rather than continuation."
+},
+"loose|2026-10-11T06:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price surge is driven by a single isolated volume spike (8.5x) followed by a complete collapse in activity, indicating a low-liquidity pump rather than sustained momentum, and the price is already near its 7-day high with no follow-through in the last 6 hours."
+},
+"loose|2026-10-11T15:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is at its 7-day high with a massive spike in volume, indicating a potential blow-off top or distribution rather than a sustainable momentum continuation, making the risk of an immediate reversal too high for a short-term momentum strategy."
+},
+"loose|2026-10-11T16:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The last two hourly bars show a sharp -4.1% pullback from the recent high, indicating the momentum has already reversed and the strategy's exit condition is imminent."
+},
+"loose|2026-10-11T17:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price has already retraced 3.3% from its 7-day high and the last hourly close is lower than the previous, indicating the momentum has stalled and the strategy's exit condition is imminent."
+},
+"loose|2026-10-11T18:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The last hourly bar closed down (-5.0%) and the price is already -8.1% from its 7-day high, indicating the momentum has stalled and the strategy's exit condition is already met."
+},
+"loose|2026-10-11T19:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced significantly from the recent spike (125.1 to 119.7) and the massive volume spike has died out, indicating the momentum is fading rather than continuing."
+},
+"loose|2026-10-11T20:00:00+00:00|FIL/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a sharp acceleration in the last hour (+5.0%) supported by a massive 10x volume spike, indicating strong momentum and institutional interest rather than a one-off pump."
+},
+"loose|2026-10-12T22:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent +5.5% move is driven by a single anomalous volume spike (23x average) followed by a complete volume drought, indicating a one-off liquidity event rather than sustained momentum, and the price is already down 8% from its 7-day high with a negative 1-hour close."
+},
+"loose|2026-10-13T02:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent spike is driven by isolated volume spikes (1.6x and 2.5x) rather than sustained momentum, and the coin is down 2.9% from its 7-day high, indicating the move is likely a retracement or dead cat bounce rather than a continuation."
+},
+"loose|2026-10-13T03:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with no volume support (0.5x average) and the recent move is driven by a single spike rather than sustained momentum, making continuation unlikely to cover the 0.6% round-trip cost."
+},
+"loose|2026-10-13T04:00:00+00:00|XTZ/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price action shows a sharp reversal from a 7-day high with no sustained volume support, indicating the move is likely a dead cat bounce rather than a continuation."
+},
+"loose|2026-10-13T05:00:00+00:00|UNI/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent volume spike is followed by a sharp drop in activity, and the price is still significantly below its 7-day high, indicating the momentum is likely exhausted rather than sustained."
+},
+"loose|2026-10-13T06:00:00+00:00|BAT/USD": {
+"take": true,
+"confidence": 85,
+"reason": "The price is at a 7-day high with a massive recent acceleration (+23% in 6h) supported by a significant volume spike (6.1x average) in the last hour, indicating strong momentum and liquidity for the strategy to enter."
+},
+"loose|2026-10-13T08:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The recent price surge is driven by a single isolated volume spike (6.1x) followed by immediate volume collapse and a pullback from the high, indicating a likely one-off pump rather than a sustainable trend."
+},
+"loose|2026-10-13T16:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has already retraced significantly from its 7-day high and the last few hourly bars show a clear downward trend with negligible volume, indicating the momentum is exhausted and the next bar is likely to close lower."
+},
+"loose|2026-10-13T17:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price action shows a sharp pullback from the 7-day high with declining volume and a negative 1-hour close, indicating momentum is stalling rather than continuing."
+},
+"loose|2026-10-13T19:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 10,
+"reason": "The price is already at the 7-day high with extremely low and declining volume, indicating the move is likely exhausted and lacks the liquidity or momentum to sustain the required continuation for a profitable round trip."
+},
+"loose|2026-10-13T20:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The last hourly bar closed down (-2.0%), which triggers the immediate sell condition, and the recent volume spike is isolated without sustained price momentum to justify holding through the round-trip costs."
+},
+"loose|2026-10-13T21:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The price has stalled and reversed from its recent high with no sustained volume spike to support continuation, indicating the momentum is likely exhausted."
+},
+"loose|2026-10-14T00:00:00+00:00|BAT/USD": {
+"take": false,
+"confidence": 15,
+"reason": "The recent price action shows a sharp pullback from the 7-day high with declining volume and a negative 1-hour close, indicating momentum is stalling rather than continuing."
+}
+}

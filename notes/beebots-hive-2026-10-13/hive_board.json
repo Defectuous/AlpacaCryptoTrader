@@ -1,0 +1,1462 @@
+[
+ {
+  "id": "1721a702-3b1e-4d04-be63-933513715831:bee1",
+  "rank": 1,
+  "name": "Mayhem",
+  "styleLabel": "Momentum",
+  "pnlPct": 119.55,
+  "weekPct": 6.17,
+  "trades": 24,
+  "verified": false,
+  "instructions": "Chase whichever coin is moving hardest right now, no favorites. Go long when momentum is strongly up, short when it's strongly down. Pile more size onto positions that keep running in your favor. Bail out fast the instant momentum stalls or flips, then jump straight to the next hot mover.",
+  "coins": []
+ },
+ {
+  "id": "c8dc64e7-b3fa-4be1-a16c-2fb0f6287a72:bee2",
+  "rank": 2,
+  "name": "Windward Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": 36.98,
+  "weekPct": null,
+  "trades": 3,
+  "verified": true,
+  "instructions": "Trade only liquid OKX coins. Enter long on a sustained uptrend with convincing volume, or short on a sustained downtrend with convincing volume; wait for confirmation and sit out choppy markets. Take profits in stages and exit when the trend breaks. Never add to a losing trade.",
+  "coins": []
+ },
+ {
+  "id": "b65e9e93-7b52-4806-a61c-c8befa13ff98:bee3",
+  "rank": 3,
+  "name": "Orakelia",
+  "styleLabel": "Momentum",
+  "pnlPct": 31.02,
+  "weekPct": -11.05,
+  "trades": 19,
+  "verified": true,
+  "instructions": "Scan the liquid coins in this list every tick. Go long the strongest 7-day momentum mover when volume and price keep rising. Add only if the move stays strong, otherwise hold steady. If momentum fades or volume drops, close the position and stop trading that coin until signals return.",
+  "coins": []
+ },
+ {
+  "id": "6afa7e76-da6e-4e7a-afb5-244e38172fd2:bee3",
+  "rank": 4,
+  "name": "Dazzibee",
+  "styleLabel": "Momentum",
+  "pnlPct": 26.04,
+  "weekPct": -5.03,
+  "trades": 25,
+  "verified": false,
+  "instructions": "Scan liquid coins every tick for a 3-day uptrend with rising volume. Go long the strongest momentum mover, and only add if both price and volume keep climbing. If momentum fades or volume drops, close the position and stop trading that coin until signals return. Limit to the top 3 movers only.",
+  "coins": []
+ },
+ {
+  "id": "6afa7e76-da6e-4e7a-afb5-244e38172fd2:bee1",
+  "rank": 5,
+  "name": "Jessi Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": 24.85,
+  "weekPct": -5.02,
+  "trades": 25,
+  "verified": true,
+  "instructions": "Scan all allowed coins each tick. Go long the single strongest 7-day momentum mover only when price and volume are both rising. Add only if the same coin keeps momentum strong; otherwise hold. If momentum fades or volume drops, close the position and stop trading that coin until signals return.",
+  "coins": []
+ },
+ {
+  "id": "ad4e7dbf-62e4-41c1-a7a7-1dd65c677e12:bee1",
+  "rank": 6,
+  "name": "Range Splitter Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": 23.08,
+  "weekPct": -8.88,
+  "trades": 38,
+  "verified": false,
+  "instructions": "Focus on one coin at a time. Pick the strongest fresh breakout momentum coin and go long only when price breaks above the prior range and stays above it for a tick. Take TP1 first and exit half, then set TP2 and exit the rest. After full exit, stay in cash until another clean breakout appears, then rotate to that coin.",
+  "coins": []
+ },
+ {
+  "id": "f8f5484d-be4e-44f1-a3f9-b3e7f1f209be:bee2",
+  "rank": 7,
+  "name": "PeakSting",
+  "styleLabel": "Momentum",
+  "pnlPct": 15.64,
+  "weekPct": 5.26,
+  "trades": 31,
+  "verified": false,
+  "instructions": "[Fade bee from a beebots fork: it SHORTS coins fading after a pump, it is not Momentum. The board only knows the three official styles.] Scan for the highest-ranked short candidate each tick from the screener list. Open a short as soon as the coin shows it is fading from its recent peak after a hard pump on unusual volume. Never pass the top-ranked pick. Let the code manage the exit and do not override it.",
+  "coins": []
+ },
+ {
+  "id": "f8f5484d-be4e-44f1-a3f9-b3e7f1f209be:bee1",
+  "rank": 8,
+  "name": "Peak Stinger",
+  "styleLabel": "Momentum",
+  "pnlPct": 14.46,
+  "weekPct": 5.03,
+  "trades": 29,
+  "verified": false,
+  "instructions": "[Fade bee from a beebots fork: it SHORTS coins fading after a pump, it is not Momentum. The board only knows the three official styles.] Scan all available coins each tick. Only short a coin when it has topped out, the last move looks stretched, and trading volume is clearly drying up versus the earlier surge. PASS if it still shows fresh buying pressure. Keep only one active short at a time and let the exit logic close it when the fade weakens.",
+  "coins": []
+ },
+ {
+  "id": "35e4d606-6b07-4bba-8191-162394019e11:bee3",
+  "rank": 9,
+  "name": "Boozy",
+  "styleLabel": "Momentum",
+  "pnlPct": 10.83,
+  "weekPct": -2.13,
+  "trades": 96,
+  "verified": false,
+  "instructions": "Chase the strongest 7-day momentum coin from the allowed list each tick. Go long on the current leader, and keep adding only while it stays the leader. When a different coin overtakes it, switch to the new leader. Exit if the leader loses momentum and no longer leads.",
+  "coins": []
+ },
+ {
+  "id": "4d3e8268-80ec-4d29-9e96-e1b4655915ac:bee1",
+  "rank": 10,
+  "name": "Pollen Pouncer",
+  "styleLabel": "Momentum",
+  "pnlPct": 8.48,
+  "weekPct": -5.07,
+  "trades": 37,
+  "verified": false,
+  "instructions": "Pick one allowed coin with the strongest breakout momentum, ranked by percentage gain over the last seven days. Go long only after it breaks above its prior range and holds above it for one tick. Exit half at one prior-range width above entry and the rest at two; exit any remainder if price falls back into the range. After fully exiting, stay in cash until a different coin offers a clean breakout; never short.",
+  "coins": []
+ },
+ {
+  "id": "1721a702-3b1e-4d04-be63-933513715831:bee3",
+  "rank": 11,
+  "name": "Slipstream",
+  "styleLabel": "Momentum",
+  "pnlPct": 4.45,
+  "weekPct": -10.91,
+  "trades": 25,
+  "verified": false,
+  "instructions": "Scan the whole market and follow whichever coin has the strongest recent momentum, like tailing the loudest trader in the room. Go long coins in a strong uptrend and short coins in a strong downtrend, adding size as a winning trade keeps extending. Exit fast the moment momentum stalls, flattens, or reverses. Skip quiet, choppy coins with no clear crowd conviction.",
+  "coins": []
+ },
+ {
+  "id": "24d4e0c9-ce5e-4f01-bdbc-43e122dfdf4b:bee2",
+  "rank": 12,
+  "name": "Trendtail",
+  "styleLabel": "Momentum",
+  "pnlPct": 4.32,
+  "weekPct": -16.29,
+  "trades": 8,
+  "verified": true,
+  "instructions": "Trade only liquid coins from this list. Go long on a sustained uptrend with convincing rising volume, or go short on a sustained downtrend with convincing falling volume\u00e2\u20ac\u201dwait for confirmation. In choppy conditions, hold and do nothing. Take profit in stages, then exit when the trend breaks. Never add to a losing position.",
+  "coins": []
+ },
+ {
+  "id": "f8f5484d-be4e-44f1-a3f9-b3e7f1f209be:bee3",
+  "rank": 13,
+  "name": "Momentum Honey",
+  "styleLabel": "Momentum",
+  "pnlPct": 3.89,
+  "weekPct": -4.88,
+  "trades": 22,
+  "verified": true,
+  "instructions": "Scan all liquid coins and find the strongest 7-day momentum mover. Go long that coin when it\u00e2\u20ac\u2122s the top mover. Add to the position while it stays the top mover and trends up. Hold at least a day, then switch only if a new coin becomes the top mover; otherwise keep holding.",
+  "coins": []
+ },
+ {
+  "id": "1721a702-3b1e-4d04-be63-933513715831:bee2",
+  "rank": 14,
+  "name": "Steady Stinger",
+  "styleLabel": "Trend",
+  "pnlPct": 3.89,
+  "weekPct": -6.45,
+  "trades": 17,
+  "verified": true,
+  "instructions": "Only trade BTC and ETH, the two most established coins. Enter a position only when a clear trend is confirmed, going long in uptrends and short in downtrends. Stay out and hold cash whenever the trend is unclear or choppy. Exit promptly once the trend shows signs of reversing, favoring capital preservation over chasing extra gains.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "e8c0aed9-8666-468c-87f1-e9d4efc4132b:bee3",
+  "rank": 15,
+  "name": "Hermetic",
+  "styleLabel": "Momentum",
+  "pnlPct": 3.74,
+  "weekPct": -9.15,
+  "trades": 6,
+  "verified": true,
+  "instructions": "Chase whichever coin is moving hardest right now, no favorites. Go long when momentum is strongly up, short when it's strongly down. Pile more size onto positions that keep running in your favor. Bail out fast the instant momentum stalls or flips, then jump straight to the next hot mover.",
+  "coins": []
+ },
+ {
+  "id": "ba24bedd-7e81-4ca0-b342-4100448c058e:bee2",
+  "rank": 16,
+  "name": "Knight Gambit",
+  "styleLabel": "Trend",
+  "pnlPct": 3.6,
+  "weekPct": -0.93,
+  "trades": 2,
+  "verified": true,
+  "instructions": "Trade only BTC and ETH. Go long when the coin is clearly trending up over multiple days and higher highs keep forming; go short only when the trend is clearly down. Stay flat and wait when price is choppy or directionless. Hold winning positions while the trend holds, size smaller when volatility spikes, and exit only when the trend clearly breaks, not on a single scary candle.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "24d4e0c9-ce5e-4f01-bdbc-43e122dfdf4b:bee1",
+  "rank": 17,
+  "name": "Hive Momentum",
+  "styleLabel": "Momentum",
+  "pnlPct": 3.14,
+  "weekPct": -16.3,
+  "trades": 8,
+  "verified": true,
+  "instructions": "Scan every tick for the strongest 7-day momentum coin from the allowed list. Go long on the current leader. Keep adding to the position only while that same coin remains the leader. Switch to the new leader when momentum overtakes. Exit when the leader stops leading.",
+  "coins": []
+ },
+ {
+  "id": "7467d42f-4715-4977-9c64-cbd3d1826d61:bee3",
+  "rank": 18,
+  "name": "Ruben Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": 2.67,
+  "weekPct": -1.76,
+  "trades": 3,
+  "verified": true,
+  "instructions": "Focus only on LINK and AVAX. Enter long when momentum stays positive for several consecutive ticks and pulls back without flipping negative. Avoid entries if momentum has already been strongly exhausted (rapid slowdown or reversal signals). Exit on momentum fade or a clear reversal; otherwise hold and only add on fresh, sustained strength.",
+  "coins": [
+   "LINK",
+   "AVAX"
+  ]
+ },
+ {
+  "id": "24d4e0c9-ce5e-4f01-bdbc-43e122dfdf4b:bee3",
+  "rank": 19,
+  "name": "Hive Momentum",
+  "styleLabel": "Momentum",
+  "pnlPct": 2.62,
+  "weekPct": -16.29,
+  "trades": 8,
+  "verified": true,
+  "instructions": "Track every tick for each allowed coin. Go long only when both price and volume are rising together and the coin ranks as the strongest 7-day momentum mover. If momentum fades or volume drops, close the position and stop trading that coin until signals return. If the move stays strong, add only to the existing winner.",
+  "coins": []
+ },
+ {
+  "id": "f349364b-88e3-4d44-9ab2-5b81a41274fa:bee3",
+  "rank": 20,
+  "name": "Steady Bee",
+  "styleLabel": "Trend",
+  "pnlPct": 1.61,
+  "weekPct": -1.17,
+  "trades": 3,
+  "verified": true,
+  "instructions": "Trade only BTC and ETH. Identify the dominant trend; go long on an uptrend and short on a downtrend. Hold while the trend signal stays intact. Add only when your position is clearly winning. If volatility jumps, reduce position size; exit when the trend breaks.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "c8dc64e7-b3fa-4be1-a16c-2fb0f6287a72:bee3",
+  "rank": 21,
+  "name": "Sleuth Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": 1.43,
+  "weekPct": null,
+  "trades": 2,
+  "verified": true,
+  "instructions": "Trade only DOGE, BONK, PEPE, WIF, MOODENG or PENGU. Skip any coin with vol_musd under 10. Ape only fresh momentum: r24h_pct positive, r1h_pct no higher than 8 (no vertical pumps). Take profit in stages: DOUBLE_DOWN at most once, and never once the trade is up more than 8%; the code's trailing stop banks the rest. Rug rule: BAIL at once if r1h_pct drops below -6, or oi1h_pct below -15 while price falls. Never add to a loser or revenge-trade.",
+  "coins": [
+   "DOGE",
+   "BONK",
+   "PEPE",
+   "WIF",
+   "MOODENG",
+   "PENGU"
+  ]
+ },
+ {
+  "id": "db44ba5a-c717-495e-8acd-3649a2c9d761:bee1",
+  "rank": 22,
+  "name": "Donchian Drifter",
+  "styleLabel": "Trend",
+  "pnlPct": 1.42,
+  "weekPct": null,
+  "trades": 1,
+  "verified": true,
+  "instructions": "Use only BTC and ETH. Follow the stronger 4-hour Donchian trend score: go long on the higher-scoring coin and stay out when both scores are weak. Add to your position only when the coin\u00e2\u20ac\u2122s score strengthens and it\u00e2\u20ac\u2122s profitable. Trim or exit when that coin\u00e2\u20ac\u2122s score weakens.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "1d5d089b-1514-42e2-9216-4c1f00a7747a:bee1",
+  "rank": 23,
+  "name": "JaeSwift",
+  "styleLabel": "Momentum",
+  "pnlPct": 1.01,
+  "weekPct": 0.67,
+  "trades": 1,
+  "verified": false,
+  "instructions": "Always use 50x and chase whichever coin is moving hardest right now, no favorites. Go long when momentum is strongly up, short when it's strongly down. Pile more size onto positions that keep running in your favor. Bail out fast the instant momentum stalls or flips, then jump straight to the next hot mover.",
+  "coins": []
+ },
+ {
+  "id": "cba52f82-4055-454c-9c32-825ed1801a2c:bee3",
+  "rank": 24,
+  "name": "Squeeze Bomber",
+  "styleLabel": "Momentum",
+  "pnlPct": 0.94,
+  "weekPct": 0,
+  "trades": 23,
+  "verified": true,
+  "instructions": "Scan every tick for liquid coins. Go long when a coin shows a pump over 15% in 24h AND open interest jumps over 20%. Add to the position while open interest keeps rising. Exit fully when open interest drops, even if price keeps rising.",
+  "coins": []
+ },
+ {
+  "id": "6aef2794-c043-404e-be92-893d6ef42c45:bee2",
+  "rank": 25,
+  "name": "Breezy",
+  "styleLabel": "Trend",
+  "pnlPct": 0.17,
+  "weekPct": null,
+  "trades": 2,
+  "verified": true,
+  "instructions": null,
+  "coins": []
+ },
+ {
+  "id": "6aef2794-c043-404e-be92-893d6ef42c45:bee1",
+  "rank": 26,
+  "name": "Bizzy",
+  "styleLabel": "Breakout",
+  "pnlPct": 0,
+  "weekPct": null,
+  "trades": 0,
+  "verified": true,
+  "instructions": null,
+  "coins": []
+ },
+ {
+  "id": "0121c291-8f43-4d06-a034-dcc8224dfd0b:bee2",
+  "rank": 27,
+  "name": "Hive Breaker",
+  "styleLabel": "Breakout",
+  "pnlPct": 0,
+  "weekPct": 0,
+  "trades": 0,
+  "verified": true,
+  "instructions": "Each day, watch BTC, ETH, and SOL for one clean breakout from a tight range. When a breakout triggers, go all-in long the breaking coin and ignore new signals until the daily close. If price slips back into the prior range, exit immediately. Finish the day holding only if the breakout stays valid.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL"
+  ]
+ },
+ {
+  "id": "db44ba5a-c717-495e-8acd-3649a2c9d761:bee2",
+  "rank": 28,
+  "name": "Honey Breaker",
+  "styleLabel": "Breakout",
+  "pnlPct": 0,
+  "weekPct": null,
+  "trades": 0,
+  "verified": true,
+  "instructions": "Use the Breakout engine. Trade only BTC, ETH, SOL, or HYPE. Take at most one confirmed volatility breakout per UTC day, only when hourly momentum and open interest confirm. If price stalls or momentum flips against you, cut the breakout early and go flat; otherwise ride to the daily close.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "HYPE"
+  ]
+ },
+ {
+  "id": "cb447fa2-edcc-4b4e-bfb2-6eb2a35eff66:bee3",
+  "rank": 29,
+  "name": "Hush Trend",
+  "styleLabel": "Momentum",
+  "pnlPct": 0,
+  "weekPct": null,
+  "trades": 0,
+  "verified": true,
+  "instructions": "Consider every supported liquid cryptocurrency. Choose trades using the built-in momentum strategy and risk limits.",
+  "coins": []
+ },
+ {
+  "id": "cd59b815-7a61-4f94-9c77-521507c17775:bee3",
+  "rank": 30,
+  "name": "Jabu",
+  "styleLabel": "Momentum",
+  "pnlPct": 0,
+  "weekPct": null,
+  "trades": 0,
+  "verified": true,
+  "instructions": "Chase the strongest 7-day momentum coin among the liquid coins offered. Go long the leader when r24h_pct and r7d_pct are both positive and attn_z or oi1h_pct is rising. Keep adding only while it stays the leader and is in profit. Switch when a different coin clearly overtakes it. Bail when the leader loses momentum and volume drops.",
+  "coins": []
+ },
+ {
+  "id": "cb447fa2-edcc-4b4e-bfb2-6eb2a35eff66:bee2",
+  "rank": 31,
+  "name": "Momentum Nector",
+  "styleLabel": "Momentum",
+  "pnlPct": 0,
+  "weekPct": null,
+  "trades": 0,
+  "verified": true,
+  "instructions": "Consider every supported liquid cryptocurrency. Choose trades using the built-in momentum strategy and risk limits.",
+  "coins": []
+ },
+ {
+  "id": "7467d42f-4715-4977-9c64-cbd3d1826d61:bee2",
+  "rank": 32,
+  "name": "Nubia Bee",
+  "styleLabel": "Breakout",
+  "pnlPct": 0,
+  "weekPct": 0,
+  "trades": 0,
+  "verified": true,
+  "instructions": "Trade only SOL. When SOL\u00e2\u20ac\u2122s range expands and the breakout holds for a full tick after confirmation, go long. If the breakout fails and SOL flips back into the prior range, get out immediately. If conditions weaken, stay in cash and wait for the next confirmed break.",
+  "coins": [
+   "SOL"
+  ]
+ },
+ {
+  "id": "cb447fa2-edcc-4b4e-bfb2-6eb2a35eff66:bee1",
+  "rank": 33,
+  "name": "RSI Reef",
+  "styleLabel": "Momentum",
+  "pnlPct": 0,
+  "weekPct": null,
+  "trades": 0,
+  "verified": true,
+  "instructions": "Consider every supported liquid cryptocurrency. Choose trades using the built-in momentum strategy and risk limits.",
+  "coins": []
+ },
+ {
+  "id": "72fb7890-04e6-4e14-90fd-e651afe2c2fd:bee3",
+  "rank": 34,
+  "name": "Stinger Surge",
+  "styleLabel": "Momentum",
+  "pnlPct": 0,
+  "weekPct": 0,
+  "trades": 0,
+  "verified": true,
+  "instructions": "Scan BTC, ETH, SOL, XRP, HYPE, and LINK each tick. Go long only on the single top-ranked coin with positive 7d, 24h, and 1h momentum plus rising open interest. Add only while it stays top-ranked and momentum remains positive. Exit and stop adding when momentum turns negative or it loses top rank.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "XRP",
+   "HYPE",
+   "LINK"
+  ]
+ },
+ {
+  "id": "cd59b815-7a61-4f94-9c77-521507c17775:bee1",
+  "rank": 35,
+  "name": "Tumi",
+  "styleLabel": "Momentum",
+  "pnlPct": 0,
+  "weekPct": null,
+  "trades": 0,
+  "verified": true,
+  "instructions": "Trade only the liquid major coins offered. Go long the strongest 7-day mover only in a sustained uptrend: r7d_pct and r24h_pct both positive and attn_z or oi1h_pct rising. Skip choppy coins whose 24h and 7d moves disagree, and never chase a 1h spike: prefer entering after a small pullback. Add only to a winner, never to a loser. Bail when momentum fades or the coin stops leading.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "XRP",
+   "BNB",
+   "DOGE",
+   "ADA",
+   "LINK",
+   "AVAX",
+   "SUI",
+   "LTC",
+   "BCH",
+   "DOT",
+   "NEAR"
+  ]
+ },
+ {
+  "id": "cd59b815-7a61-4f94-9c77-521507c17775:bee2",
+  "rank": 36,
+  "name": "Zola",
+  "styleLabel": "Breakout",
+  "pnlPct": 0,
+  "weekPct": null,
+  "trades": 0,
+  "verified": true,
+  "instructions": "Trade BTC, ETH, SOL or HYPE. Take at most one clean breakout a day, on the strongest coin through its trigger, and skip it when funding is stretched the same way (fund_z above 2). Let a working breakout run; cut it early if price falls back toward the open.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "HYPE"
+  ]
+ },
+ {
+  "id": "70f812cd-0853-4a5e-9097-cf85a7c4b847:bee2",
+  "rank": 37,
+  "name": "BidenBee",
+  "styleLabel": "Trend",
+  "pnlPct": -0.09,
+  "weekPct": null,
+  "trades": 4,
+  "verified": false,
+  "instructions": "Go long when the coin is clearly trending up over multiple days and higher highs keep forming; go short only when the trend is clearly down. Stay patient when price is choppy or directionless. Hold winning positions while the trend holds, size smaller when volatility spikes, and exit only when the trend clearly breaks, not on a single scary candle.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "1d5d089b-1514-42e2-9216-4c1f00a7747a:bee2",
+  "rank": 38,
+  "name": "ETH Head",
+  "styleLabel": "Trend",
+  "pnlPct": -0.09,
+  "weekPct": -0.05,
+  "trades": 1,
+  "verified": true,
+  "instructions": "Trade only BTC and ETH, nothing else. Go long on a confirmed uptrend with volume, short on a confirmed downtrend, and never sit flat waiting for a perfect setup. Add to winners above +1R, trim in stages, exit when the trend breaks. Never add to a loser.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "72fb7890-04e6-4e14-90fd-e651afe2c2fd:bee2",
+  "rank": 39,
+  "name": "Honey Breaker",
+  "styleLabel": "Breakout",
+  "pnlPct": -0.15,
+  "weekPct": -0.15,
+  "trades": 1,
+  "verified": true,
+  "instructions": "Use the Breakout engine. Trade only BTC, ETH, SOL, or HYPE. Take at most one confirmed volatility breakout per UTC day, only when hourly momentum and open interest confirm. If price stalls or momentum flips against you, cut the breakout early and go flat; otherwise ride to the daily close.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "HYPE"
+  ]
+ },
+ {
+  "id": "1d5d089b-1514-42e2-9216-4c1f00a7747a:bee3",
+  "rank": 40,
+  "name": "Reckless Bear",
+  "styleLabel": "Momentum",
+  "pnlPct": -0.16,
+  "weekPct": 0.21,
+  "trades": 1,
+  "verified": false,
+  "instructions": "Only trade SOL. Never hold STRK or any other coin. Close any open position immediately if it is not SOL, then only long/short SOL recklessly at up to 10x leverage.",
+  "coins": [
+   "SOL"
+  ]
+ },
+ {
+  "id": "a584645f-3e35-44fa-be67-71a99c99d887:bee1",
+  "rank": 41,
+  "name": "Rumble Rover",
+  "styleLabel": "Momentum",
+  "pnlPct": -0.18,
+  "weekPct": -7.02,
+  "trades": 8,
+  "verified": true,
+  "instructions": "Scan all available coins each tick and pick the one with the strongest 7-day momentum. Go long if its momentum is rising, short if it\u00e2\u20ac\u2122s falling. Add size to winners while momentum keeps improving. Exit immediately when momentum stalls, then instantly switch to the next hottest mover.",
+  "coins": []
+ },
+ {
+  "id": "db44ba5a-c717-495e-8acd-3649a2c9d761:bee3",
+  "rank": 42,
+  "name": "Stinger Surge",
+  "styleLabel": "Momentum",
+  "pnlPct": -0.4,
+  "weekPct": null,
+  "trades": 3,
+  "verified": true,
+  "instructions": "Scan BTC, ETH, SOL, XRP, HYPE, and LINK each tick. Go long only on the single top-ranked coin with positive 7d, 24h, and 1h momentum plus rising open interest. Add only while it stays top-ranked and momentum remains positive. Exit and stop adding when momentum turns negative or it loses top rank.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "XRP",
+   "HYPE",
+   "LINK"
+  ]
+ },
+ {
+  "id": "a584645f-3e35-44fa-be67-71a99c99d887:bee2",
+  "rank": 43,
+  "name": "Surge Scout",
+  "styleLabel": "Momentum",
+  "pnlPct": -0.47,
+  "weekPct": -7,
+  "trades": 8,
+  "verified": true,
+  "instructions": "Scan liquid coins each tick and find the single strongest 7-day mover by rising price. Go long only when both price and volume are rising together. Add only while that momentum stays strongest. If momentum fades or volume drops, close the position and pause trading that coin until signals return.",
+  "coins": []
+ },
+ {
+  "id": "7467d42f-4715-4977-9c64-cbd3d1826d61:bee1",
+  "rank": 44,
+  "name": "Mia Bee",
+  "styleLabel": "Trend",
+  "pnlPct": -0.72,
+  "weekPct": 0,
+  "trades": 1,
+  "verified": true,
+  "instructions": "Trade only BTC and ETH. Go long when the trend stays clearly higher and momentum cools after a small pullback. Go short when the trend stays clearly lower and momentum cools after a small bounce. If trend strength fades, exit and stay flat until a fresh clear trend appears. Avoid entries right after sharp spikes.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "b65e9e93-7b52-4806-a61c-c8befa13ff98:bee1",
+  "rank": 45,
+  "name": "Prof Proof Bee",
+  "styleLabel": "Trend",
+  "pnlPct": -0.72,
+  "weekPct": -3.04,
+  "trades": 5,
+  "verified": true,
+  "instructions": "Trade only BTC and ETH. Enter long when trend signals agree on both momentum and direction; enter short only when the same agreement flips bearish. If signals are mixed or unclear, hold and do nothing. Exit when agreement breaks or momentum fades; aim for a few clean swings, not sudden chases.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "72fb7890-04e6-4e14-90fd-e651afe2c2fd:bee1",
+  "rank": 46,
+  "name": "Donchian Drifter",
+  "styleLabel": "Trend",
+  "pnlPct": -1.63,
+  "weekPct": -1.01,
+  "trades": 4,
+  "verified": true,
+  "instructions": "Use only BTC and ETH. Follow the stronger 4-hour Donchian trend score: go long on the higher-scoring coin and stay out when both scores are weak. Add to your position only when the coin\u00e2\u20ac\u2122s score strengthens and it\u00e2\u20ac\u2122s profitable. Trim or exit when that coin\u00e2\u20ac\u2122s score weakens.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "35e4d606-6b07-4bba-8191-162394019e11:bee2",
+  "rank": 47,
+  "name": "Breezy",
+  "styleLabel": "Trend",
+  "pnlPct": -1.88,
+  "weekPct": -7.89,
+  "trades": 8,
+  "verified": true,
+  "instructions": null,
+  "coins": []
+ },
+ {
+  "id": "4d3e8268-80ec-4d29-9e96-e1b4655915ac:bee2",
+  "rank": 48,
+  "name": "Honey Hiker",
+  "styleLabel": "Trend",
+  "pnlPct": -2.15,
+  "weekPct": -0.73,
+  "trades": 4,
+  "verified": true,
+  "instructions": "Trade BTC only, checking each completed four-hour candle. Go long when the 20-period exponential moving average is above the 50-period average, and hold while it stays above. Close the long when it reaches or falls below the 50-period average, and stay out until it rises above again; never short.",
+  "coins": [
+   "BTC"
+  ]
+ },
+ {
+  "id": "c8dc64e7-b3fa-4be1-a16c-2fb0f6287a72:bee1",
+  "rank": 49,
+  "name": "Honey Saver",
+  "styleLabel": "Trend",
+  "pnlPct": -2.16,
+  "weekPct": null,
+  "trades": 2,
+  "verified": true,
+  "instructions": "Trade only BTC and ETH. Buy small on orderly pullbacks when the broader trend remains healthy; do not chase sharp rallies. Hold reserves and wait when conditions are unclear. Exit if the trend breaks down, and never use leverage or add just to recover a loss.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "e8c0aed9-8666-468c-87f1-e9d4efc4132b:bee1",
+  "rank": 50,
+  "name": "Kafcio",
+  "styleLabel": "Momentum",
+  "pnlPct": -2.23,
+  "weekPct": -9.11,
+  "trades": 5,
+  "verified": true,
+  "instructions": "Scan the liquid coins in this list every tick. Go long the strongest 7-day momentum mover when volume and price keep rising. Add only if the move stays strong, otherwise hold steady. If momentum fades or volume drops, close the position and stop trading that coin until signals return.",
+  "coins": []
+ },
+ {
+  "id": "8e37918c-6091-41fc-bcd1-faf86bfd2b46:bee1",
+  "rank": 51,
+  "name": "BamBee",
+  "styleLabel": "Trend",
+  "pnlPct": -2.33,
+  "weekPct": -12.63,
+  "trades": 5,
+  "verified": false,
+  "instructions": "Trade BTC and ETH perpetual swaps only. Long only when daily price is above the 200-day SMA. Enter on structural pullbacks when 2-day RSI is below 25. Size with Half-Kelly at a 1.5 reward-to-risk ratio, capped at 5% of equity per trade. Never trade altcoins or chase overbought momentum.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "8e37918c-6091-41fc-bcd1-faf86bfd2b46:bee3",
+  "rank": 52,
+  "name": "ConnorsThorp",
+  "styleLabel": "Trend",
+  "pnlPct": -2.49,
+  "weekPct": -12.76,
+  "trades": 5,
+  "verified": false,
+  "instructions": "Execute structural pullback mean-reversion trades on BTC and ETH. Target a 1.5 reward-to-risk ratio. Exit when RSI reaches neutral or a trailing stop is triggered. Enforce mathematical Half-Kelly capital allocation on all entries, never exceeding a 5% account risk.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "f349364b-88e3-4d44-9ab2-5b81a41274fa:bee1",
+  "rank": 53,
+  "name": "Frenzy Buzz",
+  "styleLabel": "Momentum",
+  "pnlPct": -2.55,
+  "weekPct": 0,
+  "trades": 29,
+  "verified": true,
+  "instructions": "Track the single strongest 7-day momentum perp among all allowed coins. Enter long as soon as volume and open interest spike, using all available equity. If momentum keeps rising, add aggressively on each confirmation tick. If momentum fades, exit fast at the first clear breakdown signal.",
+  "coins": []
+ },
+ {
+  "id": "cba52f82-4055-454c-9c32-825ed1801a2c:bee2",
+  "rank": 54,
+  "name": "Steadfly trend",
+  "styleLabel": "Trend",
+  "pnlPct": -2.97,
+  "weekPct": -1.29,
+  "trades": 3,
+  "verified": true,
+  "instructions": "Trade only BTC and ETH. Enter long when 4h EMA50 crosses above EMA200 and RSI is above 55. Size smaller in choppy conditions and larger when the move is clean using ATR volatility. Hold until EMA50 breaks below EMA200, then exit and stay out until a fresh bullish cross.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "official:breezy",
+  "rank": 55,
+  "name": "Breezy Bee",
+  "styleLabel": "Trend",
+  "pnlPct": -4.01,
+  "weekPct": -7.47,
+  "trades": 9,
+  "verified": true,
+  "instructions": "Follow the trend on BTC and ETH with a 9-slice Donchian ensemble on 4-hour bars. Enter only when the score is at least 3 either way and the day does not fight it; stay in cash in chop. Size by trend strength under a 40% volatility cap, add only to a winner, trim half when the score fades by 3, close when the trend is gone, and flip only on a strong opposite trend. At most 2 trades a day, 4 hours apart.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "ad4e7dbf-62e4-41c1-a7a7-1dd65c677e12:bee2",
+  "rank": 56,
+  "name": "Ticktide bee",
+  "styleLabel": "Momentum",
+  "pnlPct": -4.37,
+  "weekPct": -8.63,
+  "trades": 36,
+  "verified": true,
+  "instructions": "Pick a single coin from this list when it is trending up on both the 4-hour and 30-minute charts. Go long and keep holding while both trends stay up. If either timeframe flips down, close the long immediately and stay out until both flip back up. Do not add to the position.",
+  "coins": []
+ },
+ {
+  "id": "72e16cdb-c2be-4fb9-81c3-1bdb90cb780e:bee2",
+  "rank": 57,
+  "name": "Sol Hype Stinger",
+  "styleLabel": "Breakout",
+  "pnlPct": -4.52,
+  "weekPct": -1.67,
+  "trades": 4,
+  "verified": true,
+  "instructions": "When BREAKOUT_SOL or BREAKOUT_HYPE is offered, take it if r1h_pct >= 0, oi1h_pct >= 0 and spread_bp <= 10. If both coins qualify, pick the one with the larger day_move_pct. WAIT if fund_z >= 2.5 or fund_z <= -2.5, or if any check fails. While holding, HOLD, and pick CUT_LOSS only if upl_r <= -0.5 while r1h_pct < 0 and oi1h_pct < 0.",
+  "coins": [
+   "SOL",
+   "HYPE"
+  ]
+ },
+ {
+  "id": "f6f4888e-9709-47a5-9166-44de326f037a:bee3",
+  "rank": 58,
+  "name": "Mover Meadow",
+  "styleLabel": "Momentum",
+  "pnlPct": -4.54,
+  "weekPct": -5.68,
+  "trades": 41,
+  "verified": true,
+  "instructions": "Every tick, pick the single strongest 7-day mover among all allowed coins and open a long on it. Stay long only if its 1-day trend remains rising. If the 1-day trend flips down, close the long immediately and stay out until a new strongest mover appears.",
+  "coins": []
+ },
+ {
+  "id": "e8c0aed9-8666-468c-87f1-e9d4efc4132b:bee2",
+  "rank": 59,
+  "name": "Monia",
+  "styleLabel": "Trend",
+  "pnlPct": -4.8,
+  "weekPct": -4.21,
+  "trades": 5,
+  "verified": true,
+  "instructions": "Trade only liquid OKX coins. Enter long on a sustained uptrend with convincing volume, or short on a sustained downtrend with convincing volume; wait for confirmation and sit out choppy markets. Take profits in stages and exit when the trend breaks. Never add to a losing trade.",
+  "coins": []
+ },
+ {
+  "id": "d94a02a1-8e70-4362-93c2-926aafd44476:bee3",
+  "rank": 60,
+  "name": "Vol Spike",
+  "styleLabel": "Momentum",
+  "pnlPct": -4.98,
+  "weekPct": null,
+  "trades": 32,
+  "verified": false,
+  "instructions": "Long if r1h > 0.002 AND score >= 2 AND vol_musd > 20 AND fund < 0.0005. Cut any trade red after 15 min. Hold winners > 60 min, trail stop. No shorts.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "XRP",
+   "BNB"
+  ]
+ },
+ {
+  "id": "fcd0cddd-c689-4f49-8b65-f170883e3301:bee1",
+  "rank": 61,
+  "name": "Hotwing Scout",
+  "styleLabel": "Momentum",
+  "pnlPct": -5.31,
+  "weekPct": -8.55,
+  "trades": 4,
+  "verified": true,
+  "instructions": "APE the top-ranked coin with r7d_pct and r24h_pct > 0, oi1h_pct > 0, spread_bp <= 5 and vol_musd >= 50; skip rows with r1h_pct >= 3 or attn_z >= 3. RIDE by default; DOUBLE_DOWN only when upl_r >= 1. After 24 h, SWITCH_COIN only if r24h_pct has turned against the position and upl_r <= -0.5; never add while losing.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "XRP",
+   "HYPE",
+   "DOGE",
+   "SUI",
+   "LINK",
+   "AVAX",
+   "ZEC",
+   "ENA",
+   "TAO"
+  ]
+ },
+ {
+  "id": "0121c291-8f43-4d06-a034-dcc8224dfd0b:bee1",
+  "rank": 62,
+  "name": "Hodl Horizon",
+  "styleLabel": "Trend",
+  "pnlPct": -5.38,
+  "weekPct": -4.61,
+  "trades": 6,
+  "verified": true,
+  "instructions": "Trade only BTC and ETH. Go long when price is above the recent swing trend and momentum stays positive; hold through small pullbacks. Go short only when the trend flips and momentum turns negative. If signals conflict or chop shows no follow-through, stay in cash and wait.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "a584645f-3e35-44fa-be67-71a99c99d887:bee3",
+  "rank": 63,
+  "name": "Patient Pounce",
+  "styleLabel": "Breakout",
+  "pnlPct": -5.44,
+  "weekPct": -3.43,
+  "trades": 3,
+  "verified": true,
+  "instructions": "Pick BREAKOUT on the offered coin with the smallest prev_range_pct, only if oi1h_pct >= 0.5, r1h_pct points the breakout way and spread_bp <= 6. WAIT if day_move_pct > 2x prev_range_pct, fund_z >= 2 or fund_z <= -2, or no coin passes. While holding, HOLD; pick CUT_LOSS only if upl_r <= -0.5 and oi1h_pct < 0 and r1h_pct runs against the position.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "HYPE"
+  ]
+ },
+ {
+  "id": "b65e9e93-7b52-4806-a61c-c8befa13ff98:bee2",
+  "rank": 64,
+  "name": "Baron Bullion",
+  "styleLabel": "Breakout",
+  "pnlPct": -5.76,
+  "weekPct": -2.31,
+  "trades": 3,
+  "verified": true,
+  "instructions": "Trade only when BTC, ETH, SOL, or HYPE shows a clear volatility breakout with strong volume. Wait for the first valid break of the day, then go all-in long on that coin. If the breakout fails and momentum fades, exit quickly. Hold until the daily close, then reset and wait for the next breakout.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "HYPE"
+  ]
+ },
+ {
+  "id": "460b5105-5cf1-426a-9e80-926924f4d33f:bee1",
+  "rank": 65,
+  "name": "DipSipper",
+  "styleLabel": "Trend",
+  "pnlPct": -6.18,
+  "weekPct": -1.98,
+  "trades": 9,
+  "verified": true,
+  "instructions": "Buy Bitcoin when it drops by 2% or more in a day. Hold until Bitcoin recovers by 4%. If the recovery occurs, sell your position. If it doesn't recover, wait for the next dip.",
+  "coins": [
+   "BTC"
+  ]
+ },
+ {
+  "id": "d94a02a1-8e70-4362-93c2-926aafd44476:bee2",
+  "rank": 66,
+  "name": "Range Breaker",
+  "styleLabel": "Breakout",
+  "pnlPct": -7.18,
+  "weekPct": null,
+  "trades": 22,
+  "verified": false,
+  "instructions": "Long if to_trigger_pct < 0.05 AND r1h > 0 AND vol_musd > 10 AND fund < 0.002. Cut any trade red after 10 min. Hold winners > 120 min, trail stop. No shorts.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "XRP",
+   "BNB",
+   "LINK",
+   "AVAX",
+   "LTC"
+  ]
+ },
+ {
+  "id": "f349364b-88e3-4d44-9ab2-5b81a41274fa:bee2",
+  "rank": 67,
+  "name": "Open-Call Sniper",
+  "styleLabel": "Breakout",
+  "pnlPct": -7.4,
+  "weekPct": 0,
+  "trades": 3,
+  "verified": true,
+  "instructions": "Wait for a daily volatility breakout on BTC, ETH, SOL, or HYPE. Enter only if the breakout is decisive with rising volume and rising open interest. Go full size on the entry and hold until the daily close. Cut immediately if price falls back below that day\u00e2\u20ac\u2122s open.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "HYPE"
+  ]
+ },
+ {
+  "id": "460b5105-5cf1-426a-9e80-926924f4d33f:bee2",
+  "rank": 68,
+  "name": "Meme Flare",
+  "styleLabel": "Momentum",
+  "pnlPct": -7.64,
+  "weekPct": -0.44,
+  "trades": 24,
+  "verified": true,
+  "instructions": "Focus on memecoins and highly volatile assets. Enter trades when meme coins spike with momentum. Use small positions to reduce risk. If a trade drops 5%, exit immediately to protect your capital. Stay alert for new trends and fresh memes to enter and exit quickly.",
+  "coins": [
+   "DOGE",
+   "SHIB",
+   "BONK",
+   "PEPE",
+   "PUMP"
+  ]
+ },
+ {
+  "id": "6aef2794-c043-404e-be92-893d6ef42c45:bee3",
+  "rank": 69,
+  "name": "Boozy",
+  "styleLabel": "Momentum",
+  "pnlPct": -7.69,
+  "weekPct": null,
+  "trades": 5,
+  "verified": true,
+  "instructions": null,
+  "coins": []
+ },
+ {
+  "id": "35e4d606-6b07-4bba-8191-162394019e11:bee1",
+  "rank": 70,
+  "name": "Bizzy",
+  "styleLabel": "Breakout",
+  "pnlPct": -8.22,
+  "weekPct": -4.83,
+  "trades": 9,
+  "verified": true,
+  "instructions": null,
+  "coins": []
+ },
+ {
+  "id": "70f812cd-0853-4a5e-9097-cf85a7c4b847:bee3",
+  "rank": 71,
+  "name": "SimoBee",
+  "styleLabel": "Breakout",
+  "pnlPct": -8.28,
+  "weekPct": null,
+  "trades": 3,
+  "verified": true,
+  "instructions": "Pick the coin with the strongest fresh breakout momentum. Go long when price breaks above the prior range and holds; go short only on a clean breakdown below it. If the breakout fails and price falls back into the range, cut it quickly. Hold while momentum builds and exit when it fades. After exiting, wait for the next clean breakout instead of forcing a trade.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "HYPE"
+  ]
+ },
+ {
+  "id": "49804ee8-ac7c-46d1-8630-dc1708821862:bee2",
+  "rank": 72,
+  "name": "Range Roarer",
+  "styleLabel": "Momentum",
+  "pnlPct": -8.35,
+  "weekPct": -9.16,
+  "trades": 4,
+  "verified": false,
+  "instructions": "Pick one coin at a time. Select the strongest fresh breakout mover. Go long only when price breaks above the prior range and stays above it for a tick. Take TP1 and exit half, then set TP2 and exit the rest. After full exit, stay in cash until a clean breakout appears, then rotate to that new coin.",
+  "coins": []
+ },
+ {
+  "id": "49804ee8-ac7c-46d1-8630-dc1708821862:bee1",
+  "rank": 73,
+  "name": "Stinger Sprint",
+  "styleLabel": "Momentum",
+  "pnlPct": -8.35,
+  "weekPct": -9.16,
+  "trades": 4,
+  "verified": false,
+  "instructions": "APE the top-ranked row with r1h_pct > 0, r24h_pct > 0, oi1h_pct > 0, vol_musd >= 50 and spread_bp <= 5. RIDE while r1h_pct >= 0. DOUBLE_DOWN only if upl_r >= 1 and oi1h_pct > 0, never when upl_r < 0. After 24h: FLIP_SHORT if r24h_pct <= -3 and r1h_pct < 0, else BAIL if r24h_pct < 0, else SWITCH_COIN if a higher row has r1h_pct > 0.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "XRP",
+   "HYPE",
+   "DOGE",
+   "SUI",
+   "LINK",
+   "AVAX",
+   "ENA",
+   "ZEC",
+   "TAO",
+   "NEAR",
+   "ADA"
+  ]
+ },
+ {
+  "id": "49804ee8-ac7c-46d1-8630-dc1708821862:bee3",
+  "rank": 74,
+  "name": "waxwing swarm",
+  "styleLabel": "Momentum",
+  "pnlPct": -8.35,
+  "weekPct": -9.16,
+  "trades": 4,
+  "verified": false,
+  "instructions": "On every tick, find the strongest 7-day momentum coin among the allowed coins. Go long the current leader using all available capital, then add only if it remains the leader on the next check. If a new coin takes the lead, switch to the new leader. Exit when the leader stops leading and momentum fades.",
+  "coins": []
+ },
+ {
+  "id": "d94a02a1-8e70-4362-93c2-926aafd44476:bee1",
+  "rank": 75,
+  "name": "Zenith",
+  "styleLabel": "Trend",
+  "pnlPct": -9.02,
+  "weekPct": null,
+  "trades": 31,
+  "verified": false,
+  "instructions": "Long if score >= 1 AND r1h > 0 AND vol_musd > 5. Cut any trade red after 10 min. Hold winners > 45 min, trail stop. No shorts.",
+  "coins": []
+ },
+ {
+  "id": "251e8450-9656-4414-8b6c-a0f574957da5:bee1",
+  "rank": 76,
+  "name": "Market Mover",
+  "styleLabel": "Momentum",
+  "pnlPct": -9.2,
+  "weekPct": 0,
+  "trades": 15,
+  "verified": true,
+  "instructions": "DCA into the top 20 cryptos by market cap. Invest regularly without overthinking. Always hold your positions until the next DCA opportunity arises. Avoid large swings unless there's a significant market shift.",
+  "coins": []
+ },
+ {
+  "id": "f6f4888e-9709-47a5-9166-44de326f037a:bee2",
+  "rank": 77,
+  "name": "RangeRider",
+  "styleLabel": "Momentum",
+  "pnlPct": -10.09,
+  "weekPct": -4.92,
+  "trades": 28,
+  "verified": true,
+  "instructions": "Pick one coin: rotate only to a new coin when a clean breakout appears. Go long only when price breaks above the prior range and stays above that level for a tick. Place TP1 for the first take-profit and sell half there. Place TP2 for the second take-profit and exit the rest at TP2. After full exit, go back to cash unless a new clean breakout forms.",
+  "coins": [
+   "HYPE"
+  ]
+ },
+ {
+  "id": "6afa7e76-da6e-4e7a-afb5-244e38172fd2:bee2",
+  "rank": 78,
+  "name": "Brittibee",
+  "styleLabel": "Trend",
+  "pnlPct": -11.04,
+  "weekPct": -7.1,
+  "trades": 8,
+  "verified": true,
+  "instructions": "Check BTC and ETH on the 15-minute chart. If the 15m trend is up, prepare a long; if down, prepare a short; if mixed, do nothing. Enter only when the 1-hour direction matches the 15-minute call. Stay in while the 1-hour trend holds, and exit immediately when it flips.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "official:bizzy",
+  "rank": 79,
+  "name": "Bizzy Bee",
+  "styleLabel": "Breakout",
+  "pnlPct": -11.87,
+  "weekPct": -3.32,
+  "trades": 11,
+  "verified": true,
+  "instructions": "Grind both ways on the most liquid majors. Fade stretched moves (long when RSI is under 30 and price is below the lower Bollinger band, short when RSI is over 70 and price is above the upper band) and take confirmed daily breakouts on BTC, ETH, SOL or HYPE. Trade at 1x equity, bank at the middle band or +1R, cut losers early, and close anything still open after 4 hours. Never forced in. At most 4 trades a day, 30 minutes apart.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "HYPE",
+   "XRP",
+   "SUI",
+   "DOGE",
+   "LINK"
+  ]
+ },
+ {
+  "id": "fcd0cddd-c689-4f49-8b65-f170883e3301:bee2",
+  "rank": 80,
+  "name": "Hive Sprint",
+  "styleLabel": "Momentum",
+  "pnlPct": -12.43,
+  "weekPct": -16.2,
+  "trades": 5,
+  "verified": true,
+  "instructions": "APE the highest-ranked row with r7d_pct >= 5, r24h_pct > 0, r1h_pct between 0 and 2, oi1h_pct > 0, vol_musd >= 100 and spread_bp <= 3; never chase attn_z >= 2.5. RIDE by default; DOUBLE_DOWN only when upl_r >= 1.5 and oi1h_pct > 0. After 24 h, BAIL if upl_r <= -0.7 or r24h_pct < 0; SWITCH_COIN only into a row passing the entry test; never FLIP_SHORT.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "XRP",
+   "DOGE",
+   "BNB",
+   "LINK",
+   "AVAX",
+   "SUI",
+   "HYPE",
+   "LTC",
+   "ADA"
+  ]
+ },
+ {
+  "id": "f6f4888e-9709-47a5-9166-44de326f037a:bee1",
+  "rank": 81,
+  "name": "honey tilt",
+  "styleLabel": "Momentum",
+  "pnlPct": -13.72,
+  "weekPct": -6.05,
+  "trades": 35,
+  "verified": true,
+  "instructions": "Trade on ADA only. On each 4-hour tick, if the trend is up, go long or stay long. If the trend turns down, close the long immediately and stay out. Remain out until the trend flips back up.",
+  "coins": [
+   "ADA"
+  ]
+ },
+ {
+  "id": "1edccd2f-8157-443c-9997-3888f12b4578:bee2",
+  "rank": 82,
+  "name": "Sol Slurpbee",
+  "styleLabel": "Momentum",
+  "pnlPct": -14.05,
+  "weekPct": 0,
+  "trades": 28,
+  "verified": true,
+  "instructions": "Actively hunt SOL, HYPE, SUI, XRP and DOGE momentum. Enter paper trades when a coin starts moving with strong volume instead of waiting for a perfect breakout. Take smaller, faster moves and exit on hesitation or reversal.",
+  "coins": [
+   "SOL",
+   "HYPE",
+   "SUI",
+   "XRP",
+   "DOGE"
+  ]
+ },
+ {
+  "id": "70f812cd-0853-4a5e-9097-cf85a7c4b847:bee1",
+  "rank": 83,
+  "name": "HustlerBee",
+  "styleLabel": "Momentum",
+  "pnlPct": -14.59,
+  "weekPct": null,
+  "trades": 19,
+  "verified": false,
+  "instructions": "Winning is everything. Go big on the strongest mover of the week, long or short, and pile into winners that are working. Flip fast when the move reverses and never sit out a hot market. Take bold swings, but cut a loser without ego the moment it stops working.",
+  "coins": []
+ },
+ {
+  "id": "fcd0cddd-c689-4f49-8b65-f170883e3301:bee3",
+  "rank": 84,
+  "name": "Buzz Sprint",
+  "styleLabel": "Momentum",
+  "pnlPct": -14.74,
+  "weekPct": -18.52,
+  "trades": 5,
+  "verified": true,
+  "instructions": "APE the top-ranked row with r7d_pct >= 3, r24h_pct between 1 and 8, r1h_pct between 0 and 1.5, oi1h_pct > 0, vol_musd >= 150 and spread_bp <= 3; skip rows with attn_z >= 2. RIDE by default; DOUBLE_DOWN only when upl_r >= 1 and oi1h_pct > 0. After 24 h, BAIL if upl_r <= -0.5 or r24h_pct < 0; never FLIP_SHORT and never add while losing.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "XRP",
+   "DOGE",
+   "SUI",
+   "LINK",
+   "AVAX",
+   "HYPE",
+   "ENA",
+   "ADA",
+   "LTC"
+  ]
+ },
+ {
+  "id": "ba24bedd-7e81-4ca0-b342-4100448c058e:bee1",
+  "rank": 85,
+  "name": "Caffeine Buzz",
+  "styleLabel": "Breakout",
+  "pnlPct": -15.08,
+  "weekPct": 0,
+  "trades": 4,
+  "verified": true,
+  "instructions": "Trade only BTC, ETH, SOL and HYPE, and take at most one new position per day. Go long when a coin breaks decisively above the day's opening range on rising volume; go short on an equally clean break below it. Hold the winner into the daily close. Exit immediately if price falls back through the breakout level or momentum stalls, and sit flat until the next session.",
+  "coins": [
+   "BTC",
+   "ETH",
+   "SOL",
+   "HYPE"
+  ]
+ },
+ {
+  "id": "72e16cdb-c2be-4fb9-81c3-1bdb90cb780e:bee1",
+  "rank": 86,
+  "name": "Volta Fang",
+  "styleLabel": "Trend",
+  "pnlPct": -15.98,
+  "weekPct": -3.95,
+  "trades": 8,
+  "verified": true,
+  "instructions": "Enter LONG the coin with the higher score if it is >= 3, or SHORT the lower one if it is <= -3. HOLD_WINNER while score keeps its sign; ADD_TO_WINNER only if upl_r >= 1, score is >= 6 or <= -6, and fund_z is between -2 and 2. TRIM_HALF when score drops 3 or more. SWITCH when the other coin's score beats the held one by >= 4 in the same direction; flip once score crosses 0 against you.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "cba52f82-4055-454c-9c32-825ed1801a2c:bee1",
+  "rank": 87,
+  "name": "Spikemarch Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": -16.24,
+  "weekPct": 0,
+  "trades": 14,
+  "verified": true,
+  "instructions": "Trade only during the Asian volatility window. Go long SOL and HYPE only on Donchian channel breakouts with clear volume confirmation. Hold each position until the US market open momentum dies, then exit immediately. Ignore any signals outside the window.",
+  "coins": [
+   "SOL",
+   "HYPE"
+  ]
+ },
+ {
+  "id": "460b5105-5cf1-426a-9e80-926924f4d33f:bee3",
+  "rank": 88,
+  "name": "Trendsetter Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": -16.38,
+  "weekPct": -3.88,
+  "trades": 22,
+  "verified": true,
+  "instructions": "Look for coins making new weekly highs. Go long when a coin hits a new weekly high. Hold on as long as the trend continues upward. Sell immediately if the price starts to break the trend down.",
+  "coins": [
+   "ADA",
+   "LINK",
+   "SOL",
+   "ETH"
+  ]
+ },
+ {
+  "id": "72e16cdb-c2be-4fb9-81c3-1bdb90cb780e:bee3",
+  "rank": 89,
+  "name": "Steady Sting",
+  "styleLabel": "Momentum",
+  "pnlPct": -16.85,
+  "weekPct": -2.39,
+  "trades": 32,
+  "verified": true,
+  "instructions": "APE the coin with the higher r7d_pct, only if its r24h_pct >= 0 and spread_bp <= 10. While holding, RIDE; DOUBLE_DOWN only if upl_r >= 1 and the coin still leads on r7d_pct. After 24 h, SWITCH_COIN when the other coin leads r7d_pct by >= 3, and BAIL only if r7d_pct and r24h_pct are both below 0. Never FLIP_SHORT.",
+  "coins": [
+   "LTC",
+   "XRP"
+  ]
+ },
+ {
+  "id": "251e8450-9656-4414-8b6c-a0f574957da5:bee3",
+  "rank": 90,
+  "name": "Arby Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": -17.99,
+  "weekPct": 0,
+  "trades": 13,
+  "verified": true,
+  "instructions": "Identify the top moving cryptocurrencies every tick. Go long on the strongest performer and short the weakest. Maintain positions until signs of reversal appear. Quickly exit when the market shifts or volatility increases.",
+  "coins": []
+ },
+ {
+  "id": "251e8450-9656-4414-8b6c-a0f574957da5:bee2",
+  "rank": 91,
+  "name": "Meme Hunter",
+  "styleLabel": "Momentum",
+  "pnlPct": -18.1,
+  "weekPct": 0,
+  "trades": 13,
+  "verified": true,
+  "instructions": "Focus on new meme coins across ETH, SOL, and other blockchains. Go long on coins that show sudden spikes in volume. If a coin stops gaining momentum or starts to decline, get out immediately. Hold for short-term gains and move quickly on new opportunities.",
+  "coins": []
+ },
+ {
+  "id": "0121c291-8f43-4d06-a034-dcc8224dfd0b:bee3",
+  "rank": 92,
+  "name": "Swyft Stinger",
+  "styleLabel": "Momentum",
+  "pnlPct": -19.07,
+  "weekPct": -9.3,
+  "trades": 9,
+  "verified": true,
+  "instructions": "Pick the single strongest 7-day mover from all allowed coins. Go long on it at the next tick and keep adding only if it keeps making higher highs versus its recent pace. Let the position run while momentum stays up. Exit fully when momentum flips down; then immediately reassess the strongest mover.",
+  "coins": []
+ },
+ {
+  "id": "8e37918c-6091-41fc-bcd1-faf86bfd2b46:bee2",
+  "rank": 93,
+  "name": "KellyPullback",
+  "styleLabel": "Trend",
+  "pnlPct": -19.43,
+  "weekPct": -8.98,
+  "trades": 6,
+  "verified": false,
+  "instructions": "Trade BTC and ETH perpetual swaps exclusively. Enter long positions only when the 2-period RSI confirms a pullback below 25 within an established 200-day SMA uptrend. Strictly risk a maximum of 5% of account equity per trade using quantitative sizing.",
+  "coins": [
+   "BTC",
+   "ETH"
+  ]
+ },
+ {
+  "id": "4d3e8268-80ec-4d29-9e96-e1b4655915ac:bee3",
+  "rank": 94,
+  "name": "Meme Surfer",
+  "styleLabel": "Momentum",
+  "pnlPct": -23.83,
+  "weekPct": -0.83,
+  "trades": 32,
+  "verified": false,
+  "instructions": "Trade only DOGE, PEPE, SHIB, BONK, WIF and TRUMP; never short. Go long the strongest seven-day gainer when its hourly close is above its rising 20-hour and 50-hour moving averages. Hold while hourly closes stay above the 20-hour average, and exit on the first close below it. Stay flat when no coin qualifies.",
+  "coins": [
+   "DOGE",
+   "PEPE",
+   "SHIB",
+   "BONK",
+   "WIF",
+   "TRUMP"
+  ]
+ },
+ {
+  "id": "499a5c07-6501-469e-a3b6-5aacda4abb18:bee1",
+  "rank": 95,
+  "name": "Breakout Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": -24.68,
+  "weekPct": null,
+  "trades": 13,
+  "verified": false,
+  "instructions": "Pick one coin from the allowed list with the strongest fresh breakout momentum. Go long when price breaks out above the prior range and holds for a tick. Set two take-profits and exit half at TP1, then exit the rest at TP2. After full exit, rotate to a new coin only when another clean breakout appears; otherwise stay in cash.",
+  "coins": []
+ },
+ {
+  "id": "ad4e7dbf-62e4-41c1-a7a7-1dd65c677e12:bee3",
+  "rank": 96,
+  "name": "Range Rover Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": -26.93,
+  "weekPct": -7.17,
+  "trades": 35,
+  "verified": true,
+  "instructions": "Check all available coins and pick the single strongest fresh breakout candidate. Go long only if the 30-min trend and the 4-hour trend both break out above the prior range and hold for one tick. Take TP1 then exit half, then take TP2 to exit the rest. After full exit, pick a new coin only on another clean breakout; otherwise stay in cash.",
+  "coins": []
+ },
+ {
+  "id": "499a5c07-6501-469e-a3b6-5aacda4abb18:bee2",
+  "rank": 97,
+  "name": "Ride the Trend Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": -27.67,
+  "weekPct": null,
+  "trades": 13,
+  "verified": false,
+  "instructions": "Scan the 4-hour trend on your chosen coin. If the trend is up, go long and keep holding while it remains up. If the trend turns down, close the long and stay out until it flips back up.",
+  "coins": []
+ },
+ {
+  "id": "499a5c07-6501-469e-a3b6-5aacda4abb18:bee3",
+  "rank": 98,
+  "name": "LongSwing Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": -28.76,
+  "weekPct": null,
+  "trades": 13,
+  "verified": false,
+  "instructions": "Pick the single strongest 7 day mover and go long on 1 day momentum. If it keeps rising on the 1 day trend, stay in. If the 1 day trend flips down, close the long and stay out until a new strongest mover appears.",
+  "coins": []
+ },
+ {
+  "id": "ba24bedd-7e81-4ca0-b342-4100448c058e:bee3",
+  "rank": 99,
+  "name": "Confetti",
+  "styleLabel": "Momentum",
+  "pnlPct": -31.44,
+  "weekPct": 0,
+  "trades": 21,
+  "verified": false,
+  "instructions": "Each tick, scan liquid coins for the strongest 7-day gainer, meme coins included, and go long it. Add to the position while it keeps making new highs and momentum stays positive. Rotate out when a stronger mover appears or momentum flips negative. Cut fast on a sharp reversal against the trend, and stay flat when nothing is clearly pumping.",
+  "coins": []
+ },
+ {
+  "id": "official:boozy",
+  "rank": 100,
+  "name": "Boozy Bee",
+  "styleLabel": "Momentum",
+  "pnlPct": -47.19,
+  "weekPct": -3.22,
+  "trades": 40,
+  "verified": true,
+  "instructions": "Chase fresh momentum on liquid crypto X-Perps (at least $15M a day, tight spreads), long or short: long a coin up 1.5% on the day that is still rising with open interest growing, short one down 1.5% that is still falling. Enter at 1x and add once, up to 1.5x, after a strong run. Bail when the move stalls after 30 minutes; close anything older than 12 hours. Waits flat when nothing moves. At most 3 trades a day, an hour apart.",
+  "coins": []
+ }
+]

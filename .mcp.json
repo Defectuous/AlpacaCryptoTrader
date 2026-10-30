@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "alpaca": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["alpaca-mcp-server==2.4.0", "--env-file", ".env.mcp"]
+    }
+  }
+}

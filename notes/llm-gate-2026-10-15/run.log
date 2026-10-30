@@ -1,0 +1,73 @@
+  10 LLM calls, 4.2s avg
+  20 LLM calls, 3.5s avg
+  30 LLM calls, 3.4s avg
+  40 LLM calls, 3.3s avg
+  50 LLM calls, 3.1s avg
+  60 LLM calls, 3.1s avg
+  70 LLM calls, 3.1s avg
+  80 LLM calls, 3.1s avg
+  90 LLM calls, 3.1s avg
+  100 LLM calls, 3.0s avg
+  110 LLM calls, 3.0s avg
+  120 LLM calls, 3.0s avg
+  130 LLM calls, 3.0s avg
+  140 LLM calls, 3.0s avg
+  150 LLM calls, 3.0s avg
+  160 LLM calls, 3.0s avg
+  170 LLM calls, 3.0s avg
+  180 LLM calls, 3.0s avg
+  190 LLM calls, 3.0s avg
+  200 LLM calls, 3.0s avg
+  210 LLM calls, 3.0s avg
+  220 LLM calls, 3.0s avg
+  230 LLM calls, 3.0s avg
+  240 LLM calls, 3.0s avg
+  250 LLM calls, 3.0s avg
+  260 LLM calls, 3.0s avg
+  270 LLM calls, 3.0s avg
+  280 LLM calls, 3.0s avg
+  290 LLM calls, 3.0s avg
+  300 LLM calls, 3.0s avg
+  310 LLM calls, 3.0s avg
+  320 LLM calls, 3.0s avg
+  330 LLM calls, 3.0s avg
+  340 LLM calls, 3.0s avg
+  350 LLM calls, 3.0s avg
+  360 LLM calls, 3.0s avg
+  370 LLM calls, 3.0s avg
+Data to 2026-10-15 05:00 UTC, 33 coins, model hf.co/ConwayResearch/Underdog-Saluki-27B-1.0:Underdog-Saluki-27B-1.0-IQ2-mix.gguf
+90d strict: rules -7.0% (58 tr) | LLM -9.5% (34 tr, approved 34/72)
+90d loose: rules -28.2% (194 tr) | LLM -20.0% (89 tr, approved 89/304)
+60d strict: rules -5.0% (53 tr) | LLM -8.6% (32 tr, approved 32/66)
+60d loose: rules -26.2% (172 tr) | LLM -19.4% (80 tr, approved 80/273)
+30d strict: rules -8.7% (27 tr) | LLM -3.5% (14 tr, approved 14/32)
+30d loose: rules -26.2% (93 tr) | LLM -11.1% (36 tr, approved 36/150)
+window config       mode  ret%  trades  win%  maxDD%  fees$  asked  approved  BTC hold%  basket%
+   90d strict rules only  -7.0      58  25.9    18.9   56.3      0         0       28.2     33.4
+   90d strict  LLM gated  -9.5      34  20.6    11.5   30.2     72        34       28.2     33.4
+   90d  loose rules only -28.2     194  20.1    39.8  158.6      0         0       28.2     33.4
+   90d  loose  LLM gated -20.0      89  18.0    24.2   68.2    304        89       28.2     33.4
+   60d strict rules only  -5.0      53  26.4    18.9   53.0      0         0       27.8     44.2
+   60d strict  LLM gated  -8.6      32  21.9    11.5   29.3     66        32       27.8     44.2
+   60d  loose rules only -26.2     172  19.2    39.8  143.8      0         0       27.8     44.2
+   60d  loose  LLM gated -19.4      80  15.0    24.2   60.5    273        80       27.8     44.2
+   30d strict rules only  -8.7      27  18.5    12.4   25.0      0         0        3.7     10.7
+   30d strict  LLM gated  -3.5      14  21.4     6.1   14.1     32        14        3.7     10.7
+   30d  loose rules only -26.2      93  14.0    26.2   69.7      0         0        3.7     10.7
+   30d  loose  LLM gated -11.1      36  16.7    12.8   29.7    150        36        3.7     10.7
+
+Every signal the model judged, scored by the trade's own result (after costs):
+              count  mean  median   win%
+config take                             
+loose  False    215 -0.19   -0.29  20.93
+       True      89 -0.25   -0.38  17.98
+strict False     38 -0.14   -0.54  26.32
+       True      34 -0.29   -0.38  20.59
+                 count  mean
+config conf_bin             
+loose  (-1, 50]    206 -0.19
+       (80, 90]     98 -0.25
+strict (-1, 50]     38 -0.14
+       (80, 90]     34 -0.29
+
+376 new LLM calls this run, 3.0s avg
